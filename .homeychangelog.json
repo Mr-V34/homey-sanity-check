@@ -1,4 +1,8 @@
 {
+  "0.2.0": {
+    "en": "Memory tracking: each app’s memory (PSS) is recorded every check. Crash reports show the memory before the crash and flag crashes without an error message, which suggests Homey stopped the app. The daily summary lists apps above Athom’s 30 MB guideline and how much they grew since the day before. Sanity Check itself now uses about a third less memory.",
+    "sv": "Minnesspårning: varje apps minne (PSS) sparas vid varje kontroll. Kraschrapporter visar minnet före kraschen och markerar krascher utan felmeddelande, vilket tyder på att Homey stoppade appen. Den dagliga sammanfattningen listar appar över Athoms riktvärde 30 MB och hur mycket de vuxit sedan dagen innan. Sanity Check själv använder nu ungefär en tredjedel mindre minne."
+  },
   "0.1.2": {
     "en": "New setting: choose how silent devices are reported – only in the daily summary (default), one message per check, or one message per device. The daily summary now lists silent devices by name, zone and time.",
     "sv": "Ny inställning: välj hur tysta enheter rapporteras – bara i den dagliga sammanfattningen (standard), ett meddelande per kontroll eller ett per enhet. Den dagliga sammanfattningen listar nu tysta enheter med namn, zon och tid."

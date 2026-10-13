@@ -22,7 +22,12 @@
     "daily_updates": "Updates available: __list__.",
     "daily_silent": "Silent devices: __n__.",
     "daily_silent_list": "Silent devices (__n__): __list__.",
-    "and_more": "and __n__ more."
+    "and_more": "and __n__ more.",
+    "no_message": "no error message",
+    "memory_before": "Memory at the previous check: PSS __pss__.",
+    "killed_hint": "No error message – Homey may have stopped the app, e.g. for too much memory.",
+    "daily_memory": "Memory: __n__ app(s) above Athom's 30 MB PSS guideline. Largest: __list__.",
+    "daily_self": "Sanity Check itself: PSS __pss__."
   },
   "settings": {
     "title": "Sanity Check",

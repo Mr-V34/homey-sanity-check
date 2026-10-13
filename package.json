@@ -1,0 +1,17 @@
+{
+  "name": "com.v34.sanitycheck",
+  "version": "0.1.2",
+  "description": "Sanity Check – Homey restart and app crash monitor",
+  "main": "app.js",
+  "author": "Peter Persson (Mr-V34) <info@v34.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "homey-api": "3.20.1"
+  }
+}

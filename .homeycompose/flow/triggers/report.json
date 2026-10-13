@@ -1,0 +1,11 @@
+{
+  "title": { "en": "A report was made", "sv": "En rapport skapades" },
+  "hint": {
+    "en": "Every timeline report, including the daily summary. Use it to forward reports, e.g. as a push message or to a log app.",
+    "sv": "Varje rapport i tidslinjen, även den dagliga sammanfattningen. Använd för att skicka vidare, t.ex. som push eller till en loggapp."
+  },
+  "tokens": [
+    { "name": "text", "type": "string", "title": { "en": "Report", "sv": "Rapport" }, "example": "Homey restarted at 2026-10-11 22:24:48" },
+    { "name": "type", "type": "string", "title": { "en": "Type", "sv": "Typ" }, "example": "homey_restarted" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": { "en": "An app crashed", "sv": "En app kraschade" },
+  "hint": {
+    "en": "Checked once an hour: fires when an app's crash counter went up since the previous check.",
+    "sv": "Kontrolleras en gång i timmen: utlöses när en apps kraschräknare ökat sedan förra kontrollen."
+  },
+  "tokens": [
+    { "name": "app", "type": "string", "title": { "en": "App", "sv": "App" }, "example": "Tuya Zigbee" },
+    { "name": "version", "type": "string", "title": { "en": "Version", "sv": "Version" }, "example": "0.3.4" },
+    { "name": "count", "type": "number", "title": { "en": "New crashes", "sv": "Nya krascher" }, "example": 3 },
+    { "name": "last24h", "type": "number", "title": { "en": "Crashes (24 h)", "sv": "Krascher (24 h)" }, "example": 34 }
+  ]
+}

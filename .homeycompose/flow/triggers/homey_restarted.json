@@ -1,0 +1,14 @@
+{
+  "title": { "en": "Homey restarted", "sv": "Homey startade om" },
+  "hint": {
+    "en": "Fires after a Homey restart, with the app that crashed most in the 24 h before. An indication, not proof.",
+    "sv": "Utlöses efter en omstart av Homey, med den app som kraschade mest under 24 h innan. En fingervisning, inte ett bevis."
+  },
+  "tokens": [
+    { "name": "time", "type": "string", "title": { "en": "Time", "sv": "Tid" }, "example": "2026-10-11 22:24:48" },
+    { "name": "reason", "type": "string", "title": { "en": "Reason", "sv": "Orsak" }, "example": "unexpected" },
+    { "name": "uptime_hours", "type": "number", "title": { "en": "Previous uptime (h)", "sv": "Föregående uptime (h)" }, "example": 46 },
+    { "name": "suspect", "type": "string", "title": { "en": "Possible cause", "sv": "Möjlig orsak" }, "example": "Tuya Zigbee v0.3.4" },
+    { "name": "suspect_crashes", "type": "number", "title": { "en": "Crashes (24 h)", "sv": "Krascher (24 h)" }, "example": 34 }
+  ]
+}

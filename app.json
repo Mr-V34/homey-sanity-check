@@ -1,0 +1,188 @@
+{
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
+  "id": "com.v34.sanitycheck",
+  "version": "0.1.2",
+  "compatibility": ">=12.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Sanity Check",
+    "sv": "Sanity Check"
+  },
+  "description": {
+    "en": "Know why your Homey restarted.",
+    "sv": "Få veta varför din Homey startade om."
+  },
+  "category": [
+    "tools"
+  ],
+  "brandColor": "#2E7D32",
+  "permissions": [
+    "homey:manager:api"
+  ],
+  "author": {
+    "name": "Peter Persson (Mr-V34)",
+    "email": "info@v34.com"
+  },
+  "source": "https://github.com/Mr-V34/homey-sanity-check",
+  "bugs": {
+    "url": "https://github.com/Mr-V34/homey-sanity-check/issues"
+  },
+  "flow": {
+    "triggers": [
+      {
+        "title": {
+          "en": "An app crashed",
+          "sv": "En app kraschade"
+        },
+        "hint": {
+          "en": "Checked once an hour: fires when an app's crash counter went up since the previous check.",
+          "sv": "Kontrolleras en gång i timmen: utlöses när en apps kraschräknare ökat sedan förra kontrollen."
+        },
+        "tokens": [
+          {
+            "name": "app",
+            "type": "string",
+            "title": {
+              "en": "App",
+              "sv": "App"
+            },
+            "example": "Tuya Zigbee"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "title": {
+              "en": "Version",
+              "sv": "Version"
+            },
+            "example": "0.3.4"
+          },
+          {
+            "name": "count",
+            "type": "number",
+            "title": {
+              "en": "New crashes",
+              "sv": "Nya krascher"
+            },
+            "example": 3
+          },
+          {
+            "name": "last24h",
+            "type": "number",
+            "title": {
+              "en": "Crashes (24 h)",
+              "sv": "Krascher (24 h)"
+            },
+            "example": 34
+          }
+        ],
+        "id": "app_crashed"
+      },
+      {
+        "title": {
+          "en": "Homey restarted",
+          "sv": "Homey startade om"
+        },
+        "hint": {
+          "en": "Fires after a Homey restart, with the app that crashed most in the 24 h before. An indication, not proof.",
+          "sv": "Utlöses efter en omstart av Homey, med den app som kraschade mest under 24 h innan. En fingervisning, inte ett bevis."
+        },
+        "tokens": [
+          {
+            "name": "time",
+            "type": "string",
+            "title": {
+              "en": "Time",
+              "sv": "Tid"
+            },
+            "example": "2026-10-11 22:24:48"
+          },
+          {
+            "name": "reason",
+            "type": "string",
+            "title": {
+              "en": "Reason",
+              "sv": "Orsak"
+            },
+            "example": "unexpected"
+          },
+          {
+            "name": "uptime_hours",
+            "type": "number",
+            "title": {
+              "en": "Previous uptime (h)",
+              "sv": "Föregående uptime (h)"
+            },
+            "example": 46
+          },
+          {
+            "name": "suspect",
+            "type": "string",
+            "title": {
+              "en": "Possible cause",
+              "sv": "Möjlig orsak"
+            },
+            "example": "Tuya Zigbee v0.3.4"
+          },
+          {
+            "name": "suspect_crashes",
+            "type": "number",
+            "title": {
+              "en": "Crashes (24 h)",
+              "sv": "Krascher (24 h)"
+            },
+            "example": 34
+          }
+        ],
+        "id": "homey_restarted"
+      },
+      {
+        "title": {
+          "en": "A report was made",
+          "sv": "En rapport skapades"
+        },
+        "hint": {
+          "en": "Every timeline report, including the daily summary. Use it to forward reports, e.g. as a push message or to a log app.",
+          "sv": "Varje rapport i tidslinjen, även den dagliga sammanfattningen. Använd för att skicka vidare, t.ex. som push eller till en loggapp."
+        },
+        "tokens": [
+          {
+            "name": "text",
+            "type": "string",
+            "title": {
+              "en": "Report",
+              "sv": "Rapport"
+            },
+            "example": "Homey restarted at 2026-10-11 22:24:48"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "title": {
+              "en": "Type",
+              "sv": "Typ"
+            },
+            "example": "homey_restarted"
+          }
+        ],
+        "id": "report"
+      }
+    ],
+    "actions": [
+      {
+        "title": {
+          "en": "Run a health check now",
+          "sv": "Kör en hälsokontroll nu"
+        },
+        "hint": {
+          "en": "Runs the full check and posts a summary to the timeline.",
+          "sv": "Kör hela kontrollen och lägger en sammanfattning i tidslinjen."
+        },
+        "id": "run_check"
+      }
+    ]
+  }
+}

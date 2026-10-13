@@ -1,0 +1,14 @@
+{
+  "0.1.2": {
+    "en": "New setting: choose how silent devices are reported – only in the daily summary (default), one message per check, or one message per device. The daily summary now lists silent devices by name, zone and time.",
+    "sv": "Ny inställning: välj hur tysta enheter rapporteras – bara i den dagliga sammanfattningen (standard), ett meddelande per kontroll eller ett per enhet. Den dagliga sammanfattningen listar nu tysta enheter med namn, zon och tid."
+  },
+  "0.1.1": {
+    "en": "Fixed false silent-device reports right after a Homey restart: Homey forgets when devices were last seen when it restarts, so devices are now only judged once Homey has been up long enough.",
+    "sv": "Åtgärdade felaktiga rapporter om tysta enheter direkt efter en omstart av Homey: Homey glömmer när enheter senast hördes av vid omstart, så enheter bedöms nu först när Homey varit igång tillräckligt länge."
+  },
+  "0.1.0": {
+    "en": "First prototype: detects Homey restarts with reason, counts app crashes per version, lists available app and Homey updates, and finds devices that stopped reporting.",
+    "sv": "Första prototypen: upptäcker omstarter av Homey med orsak, räknar appkrascher per version, visar tillgängliga app- och Homey-uppdateringar och hittar enheter som slutat rapportera."
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "report": {
+    "unknown": "okänd",
+    "minutes": "__n__ min",
+    "hours": "__n__ h",
+    "days": "__n__ dygn",
+    "exists": "finns",
+    "no_suspects": "Inga appkrascher registrerade under 24 h innan.",
+    "suspects": "Möjlig orsak (krascher senaste 24 h): __list__.",
+    "homey_restarted": "Homey startade om __time__ (orsak: __reason__), föregående uptime __uptime__.",
+    "homey_version_changed": "Homey uppdaterad: __from__ → __to__.",
+    "firmware_available": "Homey-uppdatering finns: __version__.",
+    "app_crashed": "__app__ kraschade __n__ gång(er) sedan förra kontrollen, __total__ senaste 24 h.",
+    "app_disabled": "__app__ har stängts av.",
+    "app_not_running": "__app__ körs inte (status: __state__).",
+    "app_version_changed": "__app__ uppdaterad: __from__ → __to__. Kraschstatistiken börjar om.",
+    "app_update_available": "__app__: version __update__ finns, uppdatera gärna.",
+    "sensor_silent": "Tyst enhet: __name__ (__zone__) har inte rapporterat på __age__.",
+    "sensor_back": "__name__ (__zone__) rapporterar igen.",
+    "daily_title": "Daglig hälsokontroll – Homey __version__, igång sedan __since__ (orsak: __reason__).",
+    "daily_restarts": "__n__ omstart(er) senaste 24 h.",
+    "daily_updates": "Uppdateringar finns: __list__.",
+    "daily_silent": "Tysta enheter: __n__.",
+    "daily_silent_list": "Tysta enheter (__n__): __list__.",
+    "and_more": "och __n__ till."
+  },
+  "settings": {
+    "title": "Sanity Check",
+    "subtitle": "Gränser för tysta enheter och tid för daglig sammanfattning.",
+    "thresholds": "Timmar utan rapport innan en enhet räknas som tyst",
+    "summary": "Daglig sammanfattning",
+    "summary_hour": "Klockslag (0–23)",
+    "save": "Spara",
+    "saved": "Sparat",
+    "silent_report": "Rapportera tysta enheter",
+    "silent_daily": "Bara i den dagliga sammanfattningen",
+    "silent_grouped": "Ett meddelande per kontroll, alla enheter samlat",
+    "silent_each": "Ett meddelande per enhet"
+  }
+}

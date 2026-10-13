@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- App icon: flame silhouette on a TRANSPARENT background. Homey masks the
+       app icon and places the brand colour (#E05000) behind it automatically,
+       so this renders as a white flame on an orange tile. -->
+  <path d="M50 8
+           C 39 33 32 44 32 62
+           C 32 79 40 91 50 91
+           C 60 91 68 79 68 62
+           C 68 47 60 45 60 33
+           C 60 24 54 20 50 8 Z"
+        fill="#111111"/>
+</svg>

@@ -1,0 +1,32 @@
+{
+  "id": "com.v34.sanitycheck",
+  "version": "0.1.2",
+  "compatibility": ">=12.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Sanity Check",
+    "sv": "Sanity Check"
+  },
+  "description": {
+    "en": "Know why your Homey restarted.",
+    "sv": "Få veta varför din Homey startade om."
+  },
+  "category": [
+    "tools"
+  ],
+  "brandColor": "#2E7D32",
+  "permissions": [
+    "homey:manager:api"
+  ],
+  "author": {
+    "name": "Peter Persson (Mr-V34)",
+    "email": "info@v34.com"
+  },
+  "source": "https://github.com/Mr-V34/homey-sanity-check",
+  "bugs": {
+    "url": "https://github.com/Mr-V34/homey-sanity-check/issues"
+  }
+}

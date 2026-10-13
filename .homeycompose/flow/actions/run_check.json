@@ -1,0 +1,7 @@
+{
+  "title": { "en": "Run a health check now", "sv": "Kör en hälsokontroll nu" },
+  "hint": {
+    "en": "Runs the full check and posts a summary to the timeline.",
+    "sv": "Kör hela kontrollen och lägger en sammanfattning i tidslinjen."
+  }
+}

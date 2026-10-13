@@ -1,0 +1,40 @@
+{
+  "report": {
+    "unknown": "unknown",
+    "minutes": "__n__ min",
+    "hours": "__n__ h",
+    "days": "__n__ days",
+    "exists": "available",
+    "no_suspects": "No app crashes recorded in the 24 h before.",
+    "suspects": "Possible cause (crashes last 24 h): __list__.",
+    "homey_restarted": "Homey restarted at __time__ (reason: __reason__), previous uptime __uptime__.",
+    "homey_version_changed": "Homey updated: __from__ → __to__.",
+    "firmware_available": "Homey update available: __version__.",
+    "app_crashed": "__app__ crashed __n__ time(s) since the previous check, __total__ in the last 24 h.",
+    "app_disabled": "__app__ has been disabled.",
+    "app_not_running": "__app__ is not running (state: __state__).",
+    "app_version_changed": "__app__ updated: __from__ → __to__. Crash statistics start over.",
+    "app_update_available": "__app__: version __update__ is available, consider updating.",
+    "sensor_silent": "Silent device: __name__ (__zone__) has not reported for __age__.",
+    "sensor_back": "__name__ (__zone__) is reporting again.",
+    "daily_title": "Daily health check – Homey __version__, up since __since__ (reason: __reason__).",
+    "daily_restarts": "__n__ restart(s) in the last 24 h.",
+    "daily_updates": "Updates available: __list__.",
+    "daily_silent": "Silent devices: __n__.",
+    "daily_silent_list": "Silent devices (__n__): __list__.",
+    "and_more": "and __n__ more."
+  },
+  "settings": {
+    "title": "Sanity Check",
+    "subtitle": "Silent-device limits and time of the daily summary.",
+    "thresholds": "Hours without a report before a device counts as silent",
+    "summary": "Daily summary",
+    "summary_hour": "Hour of day (0–23)",
+    "save": "Save",
+    "saved": "Saved",
+    "silent_report": "Report silent devices",
+    "silent_daily": "Only in the daily summary",
+    "silent_grouped": "One message per check, all devices together",
+    "silent_each": "One message per device"
+  }
+}

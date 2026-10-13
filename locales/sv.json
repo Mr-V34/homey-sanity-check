@@ -22,7 +22,12 @@
     "daily_updates": "Uppdateringar finns: __list__.",
     "daily_silent": "Tysta enheter: __n__.",
     "daily_silent_list": "Tysta enheter (__n__): __list__.",
-    "and_more": "och __n__ till."
+    "and_more": "och __n__ till.",
+    "no_message": "utan felmeddelande",
+    "memory_before": "Minne vid förra kontrollen: PSS __pss__.",
+    "killed_hint": "Inget felmeddelande – Homey kan ha stoppat appen, t.ex. för högt minne.",
+    "daily_memory": "Minne: __n__ app(ar) över Athoms riktvärde 30 MB PSS. Störst: __list__.",
+    "daily_self": "Sanity Check själv: PSS __pss__."
   },
   "settings": {
     "title": "Sanity Check",

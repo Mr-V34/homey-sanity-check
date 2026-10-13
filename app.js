@@ -1,9 +1,10 @@
 'use strict';
 
 const Homey = require('homey');
-const { HomeyAPI } = require('homey-api');
+const { ReadOnlyApi } = require('./lib/web-api');
 const {
   checkSystem, checkFirmware, checkApps, checkSensors, suspects, DAY,
+  memoryReport, pssSnapshot, pssFromMemoryInfo,
 } = require('./lib/checks');
 const { eventText, dailySummary } = require('./lib/report');
 const {
@@ -15,8 +16,9 @@ const SENSOR_EVENTS = ['sensor_silent', 'sensor_back'];
 
 // ── Sanity Check ──────────────────────────────────────────────────────────────
 // Read-only: every Web API call below is a GET with a *.readonly scope.
-// One full check per hour (4 calls: system, apps, updates, devices), no
-// realtime subscriptions, small state in homey.settings, no growing logs.
+// One full check per hour (5 GET calls: system, memory, apps, updates,
+// devices; zones only when a device report goes out), no realtime
+// subscriptions, small state in homey.settings, no growing logs.
 
 class SanityCheckApp extends Homey.App {
 
@@ -24,7 +26,7 @@ class SanityCheckApp extends Homey.App {
     this.log('Sanity Check started');
     this.log(`Homey:    ${this.homey.version}`);
 
-    this._api = await HomeyAPI.createAppAPI({ homey: this.homey });
+    this._api = new ReadOnlyApi(this.homey);
     this._running = false;
 
     this._triggerRestarted = this.homey.flow.getTriggerCard('homey_restarted');
@@ -58,7 +60,7 @@ class SanityCheckApp extends Homey.App {
       const events = [];
       const firstRun = !prev.bootId; // baseline only: show a summary so the user sees it works
 
-      const info = await this._get('system.getInfo', () => this._api.system.getInfo());
+      const info = await this._get('system.getInfo', () => this._api.getInfo());
       if (info) {
         const r = checkSystem(info, prev, now);
         for (const e of r.events) {
@@ -69,14 +71,20 @@ class SanityCheckApp extends Homey.App {
         events.push(...r.events);
       }
 
-      const apps = await this._get('apps.getApps', () => this._api.apps.getApps());
+      const memory = await this._get('system.getMemoryInfo', () => this._api.getMemoryInfo());
+      const pssById = pssFromMemoryInfo(memory);
+
+      const apps = await this._get('apps.getApps', () => this._api.getApps());
       if (apps) {
-        const r = checkApps(Object.values(apps), prev, now, this.homey.manifest.id);
+        const selfId = this.homey.manifest.id;
+        const r = checkApps(Object.values(apps), prev, now, selfId, pssById);
         Object.assign(next, r.state);
         events.push(...r.events);
+        const me = apps[selfId];
+        next.self = { pss: pssById[selfId] ?? null, rss: me && me.usage ? me.usage.mem : null };
       }
 
-      const updates = await this._get('updates.getUpdates', () => this._api.updates.getUpdates());
+      const updates = await this._get('updates.getUpdates', () => this._api.getUpdates());
       if (updates) {
         const r = checkFirmware(updates, prev);
         Object.assign(next, r.state);
@@ -84,7 +92,7 @@ class SanityCheckApp extends Homey.App {
       }
 
       let silentNow = [];
-      const devices = await this._get('devices.getDevices', () => this._api.devices.getDevices());
+      const devices = await this._get('devices.getDevices', () => this._api.getDevices());
       if (devices) {
         const r = checkSensors(Object.values(devices), prev, this._thresholds(), now, next.bootDate);
         Object.assign(next, r.state);
@@ -92,11 +100,12 @@ class SanityCheckApp extends Homey.App {
         silentNow = r.current;
       }
 
+      next.lastCheck = { at: new Date(now).toISOString(), ms: Date.now() - t0 };
       this.homey.settings.set('state', next);
       await this._emit(events);
       await this._maybeDailySummary(next, silentNow, now, force || firstRun);
 
-      this.log(`Check done in ${Date.now() - t0} ms, ${events.length} event(s), heap ${this._heapMb()} MB`);
+      this.log(`Check done in ${next.lastCheck.ms} ms, ${events.length} event(s), heap ${this._heapMb()} MB`);
       return true;
     } catch (err) {
       this.error('Check failed:', err.message);
@@ -119,7 +128,7 @@ class SanityCheckApp extends Homey.App {
   async _addZoneNames(items) {
     const withZone = items.filter(e => e.zone);
     if (!withZone.length) return;
-    const zones = await this._get('zones.getZones', () => this._api.zones.getZones());
+    const zones = await this._get('zones.getZones', () => this._api.getZones());
     for (const e of withZone) e.zoneName = zones && zones[e.zone] ? zones[e.zone].name : null;
   }
 
@@ -192,7 +201,11 @@ class SanityCheckApp extends Homey.App {
       updates:      Object.values(apps).filter(a => a.update).map(a => ({ name: a.name, version: a.version, update: a.update })),
       firmware:     state.firmwareAvailable,
       silent:       silentNow,
+      memory:       memoryReport(apps, state.pssAtSummary),
+      self:         state.self,
     };
+    // Snapshot for the "+N MB since yesterday" in the next summary.
+    if (!force) this.homey.settings.set('state', { ...state, pssAtSummary: pssSnapshot(apps) });
     await this._addZoneNames(silentNow);
     const text = dailySummary(summary, (k, tk) => this.homey.__(k, tk), d => this._fmt(d));
     this.log('Daily summary:', text);

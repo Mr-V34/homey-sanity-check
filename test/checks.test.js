@@ -237,3 +237,62 @@ test('report: daily summary lists silent devices with zone and age, capped at 10
   const none = dailySummary({ ...base, silent: [] }, t, () => 'x');
   assert.match(none, /report\.daily_silent\{"n":0\}/);
 });
+
+// ── Memory (RSS/PSS) ──────────────────────────────────────────────────────────
+
+const { memoryReport, pssSnapshot, pssFromMemoryInfo, MB } = require('../lib/checks');
+
+test('memory: PSS parsed from real getMemoryInfo shape', () => {
+  const info = { total: 1, types: {
+    homey: { name: 'Homey', size: 380e6 },
+    'homey:app:com.netatmo': { name: 'Netatmo', size: 52e6 },
+    video: { name: 'Video', size: 19e6 },
+  } };
+  assert.deepEqual(pssFromMemoryInfo(info), { 'com.netatmo': 52e6 });
+  assert.deepEqual(pssFromMemoryInfo(null), {});
+});
+
+test('memory: RSS and PSS stored per app', () => {
+  const r = checkApps([app({ usage: { mem: 89e6 } })], {}, T0, null, { 'com.x': 35e6 });
+  assert.equal(r.state.apps['com.x'].rss, 89e6);
+  assert.equal(r.state.apps['com.x'].pss, 35e6);
+  const r2 = checkApps([app({ usage: { mem: 0 } })], {}, T0, null, {});
+  assert.equal(r2.state.apps['com.x'].rss, null);
+  assert.equal(r2.state.apps['com.x'].pss, null);
+});
+
+test('memory: crash records PSS from the check before and whether a message exists', () => {
+  const s1 = checkApps([app()], {}, T0, null, { 'com.x': 120e6 }).state;
+  const r = checkApps([app({ crashedCount: 3, crashedMessage: null })], s1, T0 + HOUR, null, { 'com.x': 20e6 });
+  assert.equal(r.events[0].pss, 120e6);
+  assert.equal(r.events[0].noMessage, true);
+  const r2 = checkApps([app({ crashedCount: 3, crashedMessage: 'Error: x\n at y' })], s1, T0 + HOUR, null, {});
+  assert.equal(r2.events[0].noMessage, false);
+});
+
+test('memory: suspects carry max PSS and "no message" only when every crash lacked one', () => {
+  const state = {
+    a: { name: 'A', version: '1', crashes: [{ t: T0 - HOUR, n: 3, pss: 90e6, noMessage: true }, { t: T0 - 2 * HOUR, n: 1, pss: 140e6, noMessage: true }] },
+    b: { name: 'B', version: '1', crashes: [{ t: T0 - HOUR, n: 1, pss: null, noMessage: true }, { t: T0 - 2 * HOUR, n: 1, noMessage: false }] },
+  };
+  const s = suspects(state, T0);
+  assert.deepEqual(s.map(x => [x.id, x.pss, x.noMessage]), [['a', 140e6, true], ['b', null, false]]);
+});
+
+test('memory: report lists apps over 30 MB PSS with change since snapshot', () => {
+  const apps = {
+    big: { name: 'Big', pss: 52 * MB }, mid: { name: 'Mid', pss: 31 * MB },
+    ok: { name: 'Ok', pss: 20 * MB }, none: { name: 'None', pss: null },
+  };
+  const m = memoryReport(apps, { big: 44 * MB });
+  assert.equal(m.count, 2);
+  assert.deepEqual(m.top.map(x => [x.id, x.change]), [['big', 8 * MB], ['mid', null]]);
+  assert.deepEqual(pssSnapshot(apps), { big: 52 * MB, mid: 31 * MB, ok: 20 * MB });
+});
+
+test('report: crash text adds memory and the "stopped by Homey" hint', () => {
+  const t = (k, tk = {}) => `${k}${JSON.stringify(tk)}`;
+  const text = eventText({ type: 'app_crashed', name: 'X', version: '1', delta: 3, last24h: 3, pss: 120e6, noMessage: true }, t, () => '');
+  assert.match(text, /report\.memory_before\{"pss":"120 MB"\}/);
+  assert.match(text, /report\.killed_hint/);
+});

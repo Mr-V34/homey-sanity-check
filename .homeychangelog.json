@@ -1,5 +1,5 @@
 {
-  "0.5.1": {
+  "0.5.2": {
     "en": "First release. Sanity Check tells a planned Homey restart from an unexpected one. After an unexpected restart it looks back at the minutes before it in Homey's own Insights: when Homey stopped responding, memory jumps, apps that crashed or behaved unusually, and time-triggered Flows that ran shortly before. It counts app crashes per version, shows pending app and Homey updates, and posts a daily health check to the timeline.",
     "sv": "Första versionen. Sanity Check skiljer en planerad omstart av Homey från en oväntad. Efter en oväntad omstart tittar appen tillbaka på minuterna innan i Homeys egen Insights: när Homey slutade svara, minnessprång, appar som kraschade eller betedde sig ovanligt och tidsstyrda Flows som körde strax innan. Appen räknar appkrascher per version, visar väntande app- och Homey-uppdateringar och lägger en daglig hälsokontroll i tidslinjen."
   }

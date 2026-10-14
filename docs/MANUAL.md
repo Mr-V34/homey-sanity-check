@@ -10,7 +10,7 @@ A short guide to the Homey app that tells you why your Homey Pro restarted.
 
 ### How it works
 
-Once an hour the app reads Homey's system info, memory, installed apps and available updates, and compares them with the previous check. It only **reads**; it never restarts, updates or changes anything. The first check runs 2 minutes after the app starts, so other apps have time to start after a reboot.
+Once an hour the app reads Homey's system info, memory, installed apps and available updates, and compares them with the previous check. It only **reads**; it never restarts, updates or changes anything. The first check runs 10 minutes after the app starts, so other apps have time to start after a reboot before it reads anything.
 
 Everything is an **indication, not proof**. If an app crashed 100 times before a restart, it is the likely suspect. Sanity Check shows what happened at the same time and never claims a cause.
 
@@ -76,7 +76,7 @@ One check per hour, under one second. After an unplanned restart, once, about 70
 
 ### Så fungerar det
 
-En gång i timmen läser appen Homeys systeminfo, minne, installerade appar och tillgängliga uppdateringar, och jämför med förra kontrollen. Den **läser** bara: den startar aldrig om, uppdaterar eller ändrar något. Första kontrollen körs 2 minuter efter att appen startat, så att andra appar hinner starta efter en omstart.
+En gång i timmen läser appen Homeys systeminfo, minne, installerade appar och tillgängliga uppdateringar, och jämför med förra kontrollen. Den **läser** bara: den startar aldrig om, uppdaterar eller ändrar något. Första kontrollen körs 10 minuter efter att appen startat, så att andra appar hinner starta efter en omstart innan den läser något.
 
 Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger före en omstart är den den troliga misstänkta. Sanity Check visar vad som hände samtidigt och påstår aldrig en orsak.
 

@@ -36,6 +36,7 @@
     "pm_quiet": "Homey slutade logga cirka __time__.",
     "pm_sys_jump": "Systemminnet steg __mb__ MB på en minut (__time__).",
     "self_label": "__name__ (den här appen)",
+    "self_label_ctx": "__name__ (den här appen; senaste kontroll __time__, CPU i snitt __cpu__ %)",
     "pm_sys_jump_not_apps": "Apparna växte inte den minuten (__apps__ MB tillsammans), så ökningen kom från något utanför dem (Homey själv eller en systemprocess).",
     "pm_sys_jump_outside": "Apparna växte __apps__ MB av det; cirka __rest__ MB kom från något utanför dem (Homey själv eller en systemprocess).",
     "pm_sys_jump_apps": "Apparna står för ökningen (__apps__ MB tillsammans).",

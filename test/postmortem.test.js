@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolutionFor, windowValues, analyzeApp, analyze } = require('../lib/postmortem');
+const { resolutionFor, windowValues, trimToWindow, analyzeApp, analyze } = require('../lib/postmortem');
 const { checkSystem, isUnplanned, systemMemory, processChanges } = require('../lib/checks');
 const { eventText } = require('../lib/report');
 
@@ -239,4 +239,36 @@ test('postmortem: apps explain part of the system jump → the rest is named as 
     type: 'homey_restarted', bootDate: BOOT, rebootReason: 'unexpected', suspects: [], postmortem: r,
   }, t, fmt);
   assert.match(text, /pm_sys_jump_outside\(apps=\+20,rest=40\)/);
+});
+
+// ── Own line with context, trimmed Insights (v0.5.3) ──────────────────────────
+
+test('postmortem: Sanity Check finding states its last check and CPU, and stays ranked by score', () => {
+  const mem = series(t => (Math.abs(t - (BOOT_MS - 6 * MIN)) < MIN ? 85 : 70));
+  const r = analyze({
+    big: { name: 'Big', mem: series(t => (t < BOOT_MS - 10 * MIN ? 60 : 90)), cpu: flat(0) },
+    'com.v34.sanitycheck': { name: 'Sanity Check', self: true, mem, cpu: flat(0) },
+  }, BOOT);
+  assert.deepEqual(r.findings.map(f => f.name), ['Big', 'Sanity Check']);
+  const text = eventText({
+    type: 'homey_restarted', bootDate: BOOT, rebootReason: 'unexpected', suspects: [], postmortem: r,
+    before: { lastCheck: new Date(BOOT_MS - 13 * MIN).toISOString() },
+  }, t, fmt);
+  assert.match(text, /self_label_ctx\(name=Sanity Check,time=[^,]+,cpu=0\) pm_ram_jump/);
+});
+
+test('postmortem: trimming Insights to the window gives the same result', () => {
+  const long = fn => Array.from({ length: 360 }, (_, i) => {
+    const tm = Math.floor((BOOT_MS - 300 * MIN) / MIN) * MIN + i * MIN;
+    return { t: new Date(tm).toISOString(), v: fn(tm) };
+  });
+  const mem = long(tm => (tm < BOOT_MS - 8 * MIN ? 50 : 75));
+  const cpu = long(() => 1);
+  const trimmed = trimToWindow(mem, BOOT);
+  assert.ok(trimmed.length <= 32 && trimmed.length >= 30);
+  assert.deepEqual(
+    analyze({ a: { name: 'A', mem: trimToWindow(mem, BOOT), cpu: trimToWindow(cpu, BOOT) } }, BOOT),
+    analyze({ a: { name: 'A', mem, cpu } }, BOOT),
+  );
+  assert.deepEqual(trimToWindow(null, BOOT), []);
 });

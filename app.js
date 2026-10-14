@@ -6,7 +6,7 @@ const {
   checkSystem, checkFirmware, checkApps, suspects, DAY,
   memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
 } = require('./lib/checks');
-const { WINDOW, resolutionFor, analyze } = require('./lib/postmortem');
+const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
 const {
   crashMinutes, scheduledNear, addHistory, recurringTimes, crashesBeforeBoots,
 } = require('./lib/patterns');
@@ -164,7 +164,7 @@ class SanityCheckApp extends Homey.App {
     const entries = async (id, kind) => {
       try {
         const r = await this._api.getLogEntries('homey:manager:apps', `homey:manager:apps:${id}-${kind}`, res);
-        return (r && r.values) || null;
+        return r && r.values ? trimToWindow(r.values, bootDate) : null;
       } catch (err) {
         return null; // no log for this app (e.g. never ran): nothing to judge
       }
@@ -182,7 +182,7 @@ class SanityCheckApp extends Homey.App {
     let system = null;
     try {
       const r = await this._api.getLogEntries('homey:manager:system', 'homey:manager:system:memory', res);
-      system = (r && r.values) || null;
+      system = r && r.values ? trimToWindow(r.values, bootDate) : null;
     } catch (err) {
       this.error('Insights system memory failed:', err.message);
     }

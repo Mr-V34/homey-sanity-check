@@ -1,0 +1,27 @@
+{
+  "title": {
+    "en": "Homey !{{restarted|did not restart}} unexpectedly",
+    "sv": "Homey !{{startade|startade inte}} om oväntat"
+  },
+  "titleFormatted": {
+    "en": "Homey !{{restarted|did not restart}} unexpectedly in the last [[hours]] hours",
+    "sv": "Homey !{{startade|startade inte}} om oväntat de senaste [[hours]] timmarna"
+  },
+  "hint": {
+    "en": "Counts restarts that Homey reports as unplanned, seen since Sanity Check was installed.",
+    "sv": "Räknar omstarter som Homey rapporterar som oplanerade, sedan Sanity Check installerades."
+  },
+  "args": [
+    {
+      "type": "number",
+      "name": "hours",
+      "min": 1,
+      "max": 168,
+      "step": 1,
+      "placeholder": {
+        "en": "24",
+        "sv": "24"
+      }
+    }
+  ]
+}

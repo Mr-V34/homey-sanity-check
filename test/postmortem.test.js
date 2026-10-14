@@ -134,3 +134,15 @@ test('postmortem: no repeat at the end → not quiet; repeats are not counted as
   const moving = series(t => (t / MIN) % 7);
   assert.equal(analyze({}, BOOT, { system: moving }).quietAt, null);
 });
+
+test('condition: unplanned restart within the window; planned and older ones do not count', () => {
+  const { unplannedWithin } = require('../lib/checks');
+  const boots = [
+    { bootDate: '2026-10-14T07:50:50Z', rebootReason: 'unexpected' },
+    { bootDate: '2026-10-14T09:00:00Z', rebootReason: 'reboot' },
+  ];
+  const now = Date.parse('2026-10-14T10:00:00Z');
+  assert.equal(unplannedWithin(boots, 3 * 3600e3, now), true);
+  assert.equal(unplannedWithin(boots, 2 * 3600e3, now), false);
+  assert.equal(unplannedWithin(undefined, 3600e3, now), false);
+});

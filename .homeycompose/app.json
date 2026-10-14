@@ -1,7 +1,7 @@
 {
   "id": "com.v34.sanitycheck",
-  "version": "0.4.0",
-  "compatibility": ">=12.0.0",
+  "version": "0.5.0",
+  "compatibility": ">=13.0.0",
   "sdk": 3,
   "platforms": [
     "local"
@@ -30,6 +30,15 @@
     "name": "Peter Persson (Mr-V34)",
     "email": "info@v34.com"
   },
+  "contributors": {
+    "developers": [
+      {
+        "name": "B. Frank"
+      }
+    ]
+  },
+  "homepage": "https://github.com/Mr-V34/homey-sanity-check/blob/main/docs/MANUAL.md",
+  "support": "mailto:info@v34.com",
   "source": "https://github.com/Mr-V34/homey-sanity-check",
   "bugs": {
     "url": "https://github.com/Mr-V34/homey-sanity-check/issues"

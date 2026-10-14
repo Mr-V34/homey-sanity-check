@@ -10,7 +10,7 @@ A short guide to the Homey app that tells you why your Homey Pro restarted.
 
 ### How it works
 
-Once an hour the app reads Homey's system info, installed apps, available updates and devices, and compares them with the previous check. It only **reads**; it never restarts, updates or changes anything. The first check runs 2 minutes after the app starts, so other apps have time to start after a reboot.
+Once an hour the app reads Homey's system info, memory, installed apps and available updates, and compares them with the previous check. It only **reads**; it never restarts, updates or changes anything. The first check runs 2 minutes after the app starts, so other apps have time to start after a reboot.
 
 Everything is an **indication, not proof**. If an app crashed 100 times before a restart, it is the likely suspect. Sanity Check shows what happened at the same time and never claims a cause.
 
@@ -23,8 +23,7 @@ Everything is an **indication, not proof**. If an app crashed 100 times before a
 | **App not running / disabled** | An app went from running to stopped or crashed, or was disabled. |
 | **App updated** | An app got a new version. Its crash statistics start over: a new version counts as a new app. |
 | **Update available** | A newer app version or Homey firmware is available. |
-| **Silent device** | A device has not reported within its limit (see settings). |
-| **Daily health check** | Once a day: Homey version, up since, restart reason, restarts in the last 24 h, top crashing apps, pending updates, silent devices, apps above 30 MB PSS (with growth since the day before), free memory, swap and the size of Homey itself, recurring times, and Sanity Check's own memory. |
+| **Daily health check** | Once a day: Homey version, up since, restart reason, restarts in the last 24 h, top crashing apps, pending updates, apps above 30 MB PSS (with growth since the day before), free memory, swap and the size of Homey itself, recurring times, and Sanity Check's own memory. |
 
 ### Restart analysis (unplanned restarts)
 
@@ -44,11 +43,7 @@ Sanity Check keeps a small history (30 days, at most 60 events) for these compar
 
 | Setting | What it does |
 |---|---|
-| **Report silent devices** | *Only in the daily summary* (default, no extra messages) · *One message per check* (all devices together) · *One message per device*. |
-| **Hours without a report** | Limit per device class before a device counts as silent. 0 = not monitored. Defaults: sensors 24 h, lights and sockets 12 h. Battery sensors can be quiet for hours without anything being wrong. |
 | **Daily summary** | Hour of the day (0–23) for the daily health check. Default 08. |
-
-**Right after a Homey restart**, Homey forgets when devices were last seen. Devices are therefore only judged once Homey has been running longer than their limit, so a restart never causes false alarms.
 
 ### Flow cards
 
@@ -56,6 +51,9 @@ Sanity Check keeps a small history (30 days, at most 60 events) for these compar
 - **Homey restarted** — tokens: time, reason, previous uptime (h), possible cause, crashes (24 h).
 - **An app crashed** — tokens: app, version, new crashes, crashes (24 h).
 - **A report was made** — every timeline report, including the daily summary. Tokens: report, type. Use it to forward reports as a push message or to a log app.
+
+**Conditions**
+- **Homey restarted / did not restart unexpectedly in the last [hours] hours** — counts restarts that Homey reports as unplanned, seen since Sanity Check was installed.
 
 **Actions**
 - **Run a health check now** — runs the full check and posts a summary to the timeline.
@@ -78,7 +76,7 @@ One check per hour, under one second. After an unplanned restart, once, about 70
 
 ### Så fungerar det
 
-En gång i timmen läser appen Homeys systeminfo, installerade appar, tillgängliga uppdateringar och enheter, och jämför med förra kontrollen. Den **läser** bara: den startar aldrig om, uppdaterar eller ändrar något. Första kontrollen körs 2 minuter efter att appen startat, så att andra appar hinner starta efter en omstart.
+En gång i timmen läser appen Homeys systeminfo, minne, installerade appar och tillgängliga uppdateringar, och jämför med förra kontrollen. Den **läser** bara: den startar aldrig om, uppdaterar eller ändrar något. Första kontrollen körs 2 minuter efter att appen startat, så att andra appar hinner starta efter en omstart.
 
 Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger före en omstart är den den troliga misstänkta. Sanity Check visar vad som hände samtidigt och påstår aldrig en orsak.
 
@@ -91,8 +89,7 @@ Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger f
 | **App körs inte / avstängd** | En app gick från körs till stoppad eller kraschad, eller stängdes av. |
 | **App uppdaterad** | En app fick en ny version. Kraschstatistiken börjar om: en ny version räknas som en ny app. |
 | **Uppdatering finns** | En nyare appversion eller Homey-firmware finns. |
-| **Tyst enhet** | En enhet har inte rapporterat inom sin gräns (se inställningar). |
-| **Daglig hälsokontroll** | En gång per dygn: Homey-version, igång sedan, orsak till senaste omstart, omstarter senaste 24 h, appar som kraschat mest, väntande uppdateringar, tysta enheter, appar över 30 MB PSS (med ökning sedan dagen innan), ledigt minne, swap och hur stor Homey själv är, återkommande tider samt Sanity Checks eget minne. |
+| **Daglig hälsokontroll** | En gång per dygn: Homey-version, igång sedan, orsak till senaste omstart, omstarter senaste 24 h, appar som kraschat mest, väntande uppdateringar, appar över 30 MB PSS (med ökning sedan dagen innan), ledigt minne, swap och hur stor Homey själv är, återkommande tider samt Sanity Checks eget minne. |
 
 ### Omstartsanalys (oplanerade omstarter)
 
@@ -112,11 +109,7 @@ Sanity Check sparar en liten historik (30 dagar, högst 60 händelser) för jäm
 
 | Inställning | Vad den gör |
 |---|---|
-| **Rapportera tysta enheter** | *Bara i den dagliga sammanfattningen* (standard, inga extra meddelanden) · *Ett meddelande per kontroll* (alla enheter samlat) · *Ett meddelande per enhet*. |
-| **Timmar utan rapport** | Gräns per enhetsklass innan en enhet räknas som tyst. 0 = övervakas inte. Standard: sensorer 24 h, lampor och uttag 12 h. Batterisensorer kan vara tysta i flera timmar utan att något är fel. |
 | **Daglig sammanfattning** | Klockslag (0–23) för den dagliga hälsokontrollen. Standard 08. |
-
-**Direkt efter en omstart** glömmer Homey när enheter senast hördes av. Enheter bedöms därför först när Homey varit igång längre än deras gräns, så en omstart ger aldrig falsklarm.
 
 ### Flow-kort
 
@@ -124,6 +117,9 @@ Sanity Check sparar en liten historik (30 dagar, högst 60 händelser) för jäm
 - **Homey startade om** — taggar: tid, orsak, föregående uptime (h), möjlig orsak, krascher (24 h).
 - **En app kraschade** — taggar: app, version, nya krascher, krascher (24 h).
 - **En rapport skapades** — varje rapport i tidslinjen, även den dagliga sammanfattningen. Taggar: rapport, typ. Använd den för att skicka vidare som push eller till en loggapp.
+
+**Villkor**
+- **Homey startade / startade inte om oväntat de senaste [timmar] timmarna** — räknar omstarter som Homey rapporterar som oplanerade, sedan Sanity Check installerades.
 
 **Åtgärder**
 - **Kör en hälsokontroll nu** — kör hela kontrollen och lägger en sammanfattning i tidslinjen.

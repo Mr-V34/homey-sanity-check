@@ -10,18 +10,6 @@
   </header>
 
   <fieldset class="homey-form-fieldset">
-    <legend class="homey-form-legend" data-i18n="settings.silent_report"></legend>
-    <label class="homey-form-radio"><input class="homey-form-radio-input" type="radio" name="silentReport" value="daily"><span class="homey-form-radio-checkmark"></span><span class="homey-form-radio-text" data-i18n="settings.silent_daily"></span></label>
-    <label class="homey-form-radio"><input class="homey-form-radio-input" type="radio" name="silentReport" value="grouped"><span class="homey-form-radio-checkmark"></span><span class="homey-form-radio-text" data-i18n="settings.silent_grouped"></span></label>
-    <label class="homey-form-radio"><input class="homey-form-radio-input" type="radio" name="silentReport" value="each"><span class="homey-form-radio-checkmark"></span><span class="homey-form-radio-text" data-i18n="settings.silent_each"></span></label>
-  </fieldset>
-
-  <fieldset class="homey-form-fieldset">
-    <legend class="homey-form-legend" data-i18n="settings.thresholds"></legend>
-    <div id="thresholds"></div>
-  </fieldset>
-
-  <fieldset class="homey-form-fieldset">
     <legend class="homey-form-legend" data-i18n="settings.summary"></legend>
     <div class="homey-form-group">
       <label class="homey-form-label" for="summaryHour" data-i18n="settings.summary_hour"></label>
@@ -33,58 +21,21 @@
 
   <script type="text/javascript">
     // Keep in sync with lib/constants.js
-    const DEFAULTS = { sensor: 24, light: 12, socket: 12, thermostat: 24, heater: 24, lock: 24, windowcoverings: 24 };
     const DEFAULT_SUMMARY_HOUR = 8;
-    const DEFAULT_SILENT_REPORT = 'daily';
 
     function onHomeyReady(Homey) {
-      const box = document.getElementById('thresholds');
       const hourInput = document.getElementById('summaryHour');
 
-      Homey.get('thresholds', (err, saved) => {
-        const values = Object.assign({}, DEFAULTS, saved || {});
-        Object.keys(values).forEach(cls => {
-          const group = document.createElement('div');
-          group.className = 'homey-form-group';
-          const label = document.createElement('label');
-          label.className = 'homey-form-label';
-          label.textContent = `${cls} (h, 0 = av/off)`;
-          const input = document.createElement('input');
-          input.className = 'homey-form-input';
-          input.type = 'number'; input.min = '0'; input.step = '1';
-          input.dataset.cls = cls;
-          input.value = values[cls];
-          group.appendChild(label); group.appendChild(input);
-          box.appendChild(group);
-        });
-        Homey.get('summaryHour', (e, h) => {
-          hourInput.value = Number.isInteger(h) ? h : DEFAULT_SUMMARY_HOUR;
-          Homey.get('silentReport', (e2, mode) => {
-            const value = mode || DEFAULT_SILENT_REPORT;
-            const radio = document.querySelector(`input[name="silentReport"][value="${value}"]`);
-            if (radio) radio.checked = true;
-            Homey.ready();
-          });
-        });
+      Homey.get('summaryHour', (err, h) => {
+        hourInput.value = Number.isInteger(h) ? h : DEFAULT_SUMMARY_HOUR;
+        Homey.ready();
       });
 
       document.getElementById('save').addEventListener('click', () => {
-        const thresholds = {};
-        box.querySelectorAll('input[data-cls]').forEach(i => {
-          const n = Math.max(0, parseInt(i.value, 10) || 0);
-          thresholds[i.dataset.cls] = n;
-        });
         const hour = Math.min(23, Math.max(0, parseInt(hourInput.value, 10) || 0));
-        Homey.set('thresholds', thresholds, err => {
+        Homey.set('summaryHour', hour, err => {
           if (err) return Homey.alert(err);
-          Homey.set('summaryHour', hour, err2 => {
-            if (err2) return Homey.alert(err2);
-            const checked = document.querySelector('input[name="silentReport"]:checked');
-            Homey.set('silentReport', checked ? checked.value : DEFAULT_SILENT_REPORT, err3 => {
-              if (err3) return Homey.alert(err3);
-              Homey.alert(Homey.__('settings.saved'));
-            });
-          });
+          Homey.alert(Homey.__('settings.saved'));
         });
       });
     }

@@ -15,14 +15,9 @@
     "app_not_running": "__app__ körs inte (status: __state__).",
     "app_version_changed": "__app__ uppdaterad: __from__ → __to__. Kraschstatistiken börjar om.",
     "app_update_available": "__app__: version __update__ finns, uppdatera gärna.",
-    "sensor_silent": "Tyst enhet: __name__ (__zone__) har inte rapporterat på __age__.",
-    "sensor_back": "__name__ (__zone__) rapporterar igen.",
     "daily_title": "Daglig hälsokontroll – Homey __version__, igång sedan __since__ (orsak: __reason__).",
     "daily_restarts": "__n__ omstart(er) senaste 24 h.",
     "daily_updates": "Uppdateringar finns: __list__.",
-    "daily_silent": "Tysta enheter: __n__.",
-    "daily_silent_list": "Tysta enheter (__n__): __list__.",
-    "and_more": "och __n__ till.",
     "no_message": "utan felmeddelande",
     "memory_before": "Minne vid förra kontrollen: PSS __pss__.",
     "killed_hint": "Inget felmeddelande – Homey kan ha stoppat appen, t.ex. för högt minne.",
@@ -52,15 +47,10 @@
   },
   "settings": {
     "title": "Sanity Check",
-    "subtitle": "Gränser för tysta enheter och tid för daglig sammanfattning.",
-    "thresholds": "Timmar utan rapport innan en enhet räknas som tyst",
+    "subtitle": "Tid för den dagliga sammanfattningen.",
     "summary": "Daglig sammanfattning",
     "summary_hour": "Klockslag (0–23)",
     "save": "Spara",
-    "saved": "Sparat",
-    "silent_report": "Rapportera tysta enheter",
-    "silent_daily": "Bara i den dagliga sammanfattningen",
-    "silent_grouped": "Ett meddelande per kontroll, alla enheter samlat",
-    "silent_each": "Ett meddelande per enhet"
+    "saved": "Sparat"
   }
 }

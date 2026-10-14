@@ -4,8 +4,9 @@ const Homey = require('homey');
 const { ReadOnlyApi } = require('./lib/web-api');
 const {
   checkSystem, checkFirmware, checkApps, checkSensors, suspects, DAY,
-  memoryReport, pssSnapshot, pssFromMemoryInfo,
+  memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory,
 } = require('./lib/checks');
+const { WINDOW, resolutionFor, analyze } = require('./lib/postmortem');
 const { eventText, dailySummary } = require('./lib/report');
 const {
   DEFAULT_THRESHOLDS, DEFAULT_SUMMARY_HOUR, CHECK_INTERVAL, FIRST_CHECK_DELAY,
@@ -19,6 +20,8 @@ const SENSOR_EVENTS = ['sensor_silent', 'sensor_back'];
 // One full check per hour (5 GET calls: system, memory, apps, updates,
 // devices; zones only when a device report goes out), no realtime
 // subscriptions, small state in homey.settings, no growing logs.
+// After an unplanned Homey restart, once: 2 Insights reads per app (RAM, CPU)
+// plus system memory, for the 30 minutes before the restart.
 
 class SanityCheckApp extends Homey.App {
 
@@ -73,6 +76,7 @@ class SanityCheckApp extends Homey.App {
 
       const memory = await this._get('system.getMemoryInfo', () => this._api.getMemoryInfo());
       const pssById = pssFromMemoryInfo(memory);
+      next.sys = systemMemory(info, memory);
 
       const apps = await this._get('apps.getApps', () => this._api.getApps());
       if (apps) {
@@ -100,6 +104,13 @@ class SanityCheckApp extends Homey.App {
         silentNow = r.current;
       }
 
+      for (const e of events) {
+        if (e.type !== 'homey_restarted' || !isUnplanned(e)) continue;
+        e.postmortem = await this._postmortem(e.bootDate, prev.apps, now);
+        const boot = (next.boots || []).find(b => b.bootDate === e.bootDate);
+        if (boot) boot.postmortem = e.postmortem;
+      }
+
       next.lastCheck = { at: new Date(now).toISOString(), ms: Date.now() - t0 };
       this.homey.settings.set('state', next);
       await this._emit(events);
@@ -122,6 +133,38 @@ class SanityCheckApp extends Homey.App {
       this.error(`${label} failed:`, err.message);
       return null;
     }
+  }
+
+  // Homey's own Insights (RAM and CPU per app) for the minutes before bootDate.
+  // Apps that were disabled before the restart have no data and are skipped.
+  async _postmortem(bootDate, appsState, now) {
+    const t0 = Date.now();
+    const res = resolutionFor(new Date(bootDate).getTime() - WINDOW, now);
+    if (!res) return { unavailable: true };
+    const series = {};
+    for (const [id, a] of Object.entries(appsState || {})) {
+      if (a.enabled === false) continue;
+      const entries = async kind => {
+        try {
+          const r = await this._api.getLogEntries('homey:manager:apps', `homey:manager:apps:${id}-${kind}`, res);
+          return (r && r.values) || null;
+        } catch (err) {
+          return null; // no log for this app (e.g. never ran): nothing to judge
+        }
+      };
+      series[id] = { name: a.name, mem: await entries('mem'), cpu: await entries('cpu') };
+    }
+    let system = null;
+    try {
+      const r = await this._api.getLogEntries('homey:manager:system', 'homey:manager:system:memory', res);
+      system = (r && r.values) || null;
+    } catch (err) {
+      this.error('Insights system memory failed:', err.message);
+    }
+    const result = analyze(series, bootDate, { system });
+    if (!result.checked) return { unavailable: true };
+    this.log(`Post-mortem: ${result.checked} app(s), ${result.findings.length} finding(s) in ${Date.now() - t0} ms`);
+    return result;
   }
 
   // Zones are only fetched when a device report is actually going out.
@@ -203,6 +246,7 @@ class SanityCheckApp extends Homey.App {
       silent:       silentNow,
       memory:       memoryReport(apps, state.pssAtSummary),
       self:         state.self,
+      sys:          state.sys,
     };
     // Snapshot for the "+N MB since yesterday" in the next summary.
     if (!force) this.homey.settings.set('state', { ...state, pssAtSummary: pssSnapshot(apps) });

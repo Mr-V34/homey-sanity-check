@@ -40,7 +40,15 @@
     "daily_system": "Homey: ledigt minne __free__, swap __swap__, Homey-kärnan __core__.",
     "pm_quiet": "Homey slutade logga cirka __time__.",
     "pm_sys_jump": "Systemminnet steg __mb__ MB på en minut (__time__).",
-    "pm_together": "__n__ appar ändrades samma minut (__time__), vilket tyder på en systemhändelse snarare än en enskild app."
+    "pm_together": "__n__ appar ändrades samma minut (__time__), vilket tyder på en systemhändelse snarare än en enskild app.",
+    "sched_none": "Inga tidsstyrda Flows strax innan.",
+    "sched_near": "Tidsstyrda Flows strax innan: __list__.",
+    "every_minutes": "var __n__:e min",
+    "every_hours": "var __n__:e timme",
+    "recurring_boot": "Återkommande: __n__ oplanerade omstarter kring __time__ – kan bero på något schemalagt.",
+    "recurring_crash": "Återkommande: __n__ appkrascher kring __time__ (__apps__) – kan bero på något schemalagt.",
+    "crash_link": "__app__ kraschade inom en timme före __n__ av __total__ oplanerade omstarter.",
+    "crash_times": "Kraschtid enligt Insights: __list__."
   },
   "settings": {
     "title": "Sanity Check",

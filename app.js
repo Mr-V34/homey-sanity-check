@@ -7,6 +7,9 @@ const {
   memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory,
 } = require('./lib/checks');
 const { WINDOW, resolutionFor, analyze } = require('./lib/postmortem');
+const {
+  crashMinutes, scheduledNear, addHistory, recurringTimes, crashesBeforeBoots,
+} = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
 const {
   DEFAULT_THRESHOLDS, DEFAULT_SUMMARY_HOUR, CHECK_INTERVAL, FIRST_CHECK_DELAY,
@@ -21,7 +24,9 @@ const SENSOR_EVENTS = ['sensor_silent', 'sensor_back'];
 // devices; zones only when a device report goes out), no realtime
 // subscriptions, small state in homey.settings, no growing logs.
 // After an unplanned Homey restart, once: 2 Insights reads per app (RAM, CPU)
-// plus system memory, for the 30 minutes before the restart.
+// plus system memory, for the 30 minutes before the restart, and the Flows
+// (2 calls) to find time triggers near it. After an app crash: 2 Insights
+// reads for that app to find the minute it crashed.
 
 class SanityCheckApp extends Homey.App {
 
@@ -104,11 +109,29 @@ class SanityCheckApp extends Homey.App {
         silentNow = r.current;
       }
 
+      // History of unplanned restarts and crashes, with the best time we have.
+      const seen = [];
+      const since = prev.lastCheck ? new Date(prev.lastCheck.at).getTime() : now - 60 * 60 * 1000;
+      for (const e of events) {
+        if (e.type !== 'app_crashed') continue;
+        e.times = await this._crashTimes(e.id, since, now);
+        if (e.times.length) e.times.forEach(t => seen.push({ kind: 'crash', t, id: e.id, name: e.name }));
+        else seen.push({ kind: 'crash', t: now, id: e.id, name: e.name, exact: false });
+      }
       for (const e of events) {
         if (e.type !== 'homey_restarted' || !isUnplanned(e)) continue;
         e.postmortem = await this._postmortem(e.bootDate, prev.apps, now);
+        const at = (e.postmortem && e.postmortem.quietAt) || new Date(e.bootDate).getTime();
+        e.scheduled = await this._scheduledNear(at);
+        seen.push({ kind: 'boot', t: at });
         const boot = (next.boots || []).find(b => b.bootDate === e.bootDate);
-        if (boot) boot.postmortem = e.postmortem;
+        if (boot) Object.assign(boot, { postmortem: e.postmortem, scheduled: e.scheduled });
+      }
+      next.history = addHistory(prev.history, seen, now);
+      for (const e of events) {
+        if (e.type !== 'homey_restarted' || !isUnplanned(e)) continue;
+        e.recurring = recurringTimes(next.history, 'boot', t => this._local(t));
+        e.crashLinks = crashesBeforeBoots(next.history);
       }
 
       next.lastCheck = { at: new Date(now).toISOString(), ms: Date.now() - t0 };
@@ -165,6 +188,32 @@ class SanityCheckApp extends Homey.App {
     if (!result.checked) return { unavailable: true };
     this.log(`Post-mortem: ${result.checked} app(s), ${result.findings.length} finding(s) in ${Date.now() - t0} ms`);
     return result;
+  }
+
+  // Exact crash minutes from the app's RAM in Insights: lastHour (5 s steps)
+  // for the newest part, last6Hours (1 min) for the rest. A crash shows as RAM
+  // falling to 0 (verified 2026-10-14 with the crash probe, FINDINGS 1.19).
+  async _crashTimes(id, from, to) {
+    const times = [];
+    for (const res of ['lastHour', 'last6Hours']) {
+      try {
+        const r = await this._api.getLogEntries('homey:manager:apps', `homey:manager:apps:${id}-mem`, res);
+        for (const t of crashMinutes(r && r.values, from, to)) {
+          if (!times.some(x => Math.abs(x - t) < 60 * 1000)) times.push(t);
+        }
+      } catch (err) {
+        // no Insights for this app: the crash keeps the check time
+      }
+    }
+    return times.sort((a, b) => a - b);
+  }
+
+  // Enabled Flows with a time trigger shortly before `at`.
+  async _scheduledNear(at) {
+    const adv   = await this._get('flow.getAdvancedFlows', () => this._api.getAdvancedFlows());
+    const basic = await this._get('flow.getFlows', () => this._api.getFlows());
+    if (!adv && !basic) return null;
+    return scheduledNear([...Object.values(adv || {}), ...Object.values(basic || {})], at, t => this._local(t));
   }
 
   // Zones are only fetched when a device report is actually going out.
@@ -247,6 +296,10 @@ class SanityCheckApp extends Homey.App {
       memory:       memoryReport(apps, state.pssAtSummary),
       self:         state.self,
       sys:          state.sys,
+      recurring:    [
+        ...recurringTimes(state.history, 'boot', t => this._local(t)),
+        ...recurringTimes(state.history, 'crash', t => this._local(t)),
+      ],
     };
     // Snapshot for the "+N MB since yesterday" in the next summary.
     if (!force) this.homey.settings.set('state', { ...state, pssAtSummary: pssSnapshot(apps) });
@@ -261,6 +314,13 @@ class SanityCheckApp extends Homey.App {
 
   _thresholds() {
     return { ...DEFAULT_THRESHOLDS, ...(this.homey.settings.get('thresholds') || {}) };
+  }
+
+  _local(t) {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('sv-SE', {
+      timeZone: this.homey.clock.getTimezone(), hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(t)).map(x => [x.type, x.value]));
+    return { h: Number(p.hour), m: Number(p.minute) };
   }
 
   _fmt(date) {

@@ -40,7 +40,15 @@
     "daily_system": "Homey: free memory __free__, swap __swap__, Homey core __core__.",
     "pm_quiet": "Homey stopped logging around __time__.",
     "pm_sys_jump": "System memory rose __mb__ MB in one minute (__time__).",
-    "pm_together": "__n__ apps changed in the same minute (__time__), which points at a system event rather than one app."
+    "pm_together": "__n__ apps changed in the same minute (__time__), which points at a system event rather than one app.",
+    "sched_none": "No time-triggered Flows shortly before.",
+    "sched_near": "Time-triggered Flows shortly before: __list__.",
+    "every_minutes": "every __n__ min",
+    "every_hours": "every __n__ h",
+    "recurring_boot": "Recurring: __n__ unplanned restarts around __time__ – may be caused by something scheduled.",
+    "recurring_crash": "Recurring: __n__ app crashes around __time__ (__apps__) – may be caused by something scheduled.",
+    "crash_link": "__app__ crashed within an hour before __n__ of __total__ unplanned restarts.",
+    "crash_times": "Crash time according to Insights: __list__."
   },
   "settings": {
     "title": "Sanity Check",

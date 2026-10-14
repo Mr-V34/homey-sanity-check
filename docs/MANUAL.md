@@ -19,7 +19,7 @@ Everything is an **indication, not proof**. If an app crashed 100 times before a
 | Report | When |
 |---|---|
 | **Homey restarted** | Homey has a new boot id. Shows the time, the reason (`reboot` = planned restart, `unexpected` = crash or power loss), the previous uptime, when we last checked before the restart, and the apps that crashed most in the 24 h before. After an **unplanned** restart it adds the restart analysis below. |
-| **App crashed** | An app's crash counter went up since the previous check. Shows the number of crashes, the 24-hour total, the app's memory (PSS) at the check before and, when Homey's Insights has it, the **crash time** to within a few seconds. *No error message* means Homey most likely stopped the app, for example for using too much memory. |
+| **App crashed** | An app's crash counter went up since the previous check. Shows the number of crashes, the 24-hour total, the app's memory (PSS) at the check before and, when Homey's Insights has it, the **crash time** to within a few seconds. An app that crashes the moment it starts is too short-lived for Insights; its crash gets the check time instead. *No error message* means Homey most likely stopped the app, for example for using too much memory. |
 | **App not running / disabled** | An app went from running to stopped or crashed, or was disabled. |
 | **App updated** | An app got a new version. Its crash statistics start over: a new version counts as a new app. |
 | **Update available** | A newer app version or Homey firmware is available. |
@@ -87,7 +87,7 @@ Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger f
 | Rapport | När |
 |---|---|
 | **Homey startade om** | Homey har ett nytt boot-id. Visar tid, orsak (`reboot` = planerad omstart, `unexpected` = krasch eller strömavbrott), föregående uptime, när vi senast kontrollerade före omstarten och de appar som kraschade mest under 24 h innan. Efter en **oplanerad** omstart läggs omstartsanalysen nedan till. |
-| **En app kraschade** | En apps kraschräknare har ökat sedan förra kontrollen. Visar antal krascher, summan för 24 h, appens minne (PSS) vid kontrollen innan och, när Homeys Insights har datan, **kraschtiden** på några sekunder när. *Utan felmeddelande* betyder att Homey troligen stoppade appen, till exempel för högt minne. |
+| **En app kraschade** | En apps kraschräknare har ökat sedan förra kontrollen. Visar antal krascher, summan för 24 h, appens minne (PSS) vid kontrollen innan och, när Homeys Insights har datan, **kraschtiden** på några sekunder när. En app som kraschar direkt när den startar lever för kort för Insights, och då får kraschen kontrolltiden i stället. *Utan felmeddelande* betyder att Homey troligen stoppade appen, till exempel för högt minne. |
 | **App körs inte / avstängd** | En app gick från körs till stoppad eller kraschad, eller stängdes av. |
 | **App uppdaterad** | En app fick en ny version. Kraschstatistiken börjar om: en ny version räknas som en ny app. |
 | **Uppdatering finns** | En nyare appversion eller Homey-firmware finns. |

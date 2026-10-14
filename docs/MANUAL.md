@@ -18,7 +18,7 @@ Everything is an **indication, not proof**. If an app crashed 100 times before a
 
 | Report | When |
 |---|---|
-| **Homey restarted** | Homey has a new boot id. Shows the time, the reason (`reboot` = planned restart, `unexpected` = crash or power loss), the previous uptime, when we last checked before the restart, and the apps that crashed most in the 24 h before. After an **unplanned** restart it adds the restart analysis below. |
+| **Homey restarted** | Homey has a new boot id. Shows the time, the reason (`reboot` = planned restart, `unexpected` = crash or power loss), the previous uptime, when we last checked before the restart, and the apps that crashed most in the 24 h before. After an **unplanned** restart it starts with a verdict and adds the restart analysis below. |
 | **App crashed** | An app's crash counter went up since the previous check. Shows the number of crashes, the 24-hour total, the app's memory (PSS) at the check before and, when Homey's Insights has it, the **crash time** to within a few seconds. An app that crashes the moment it starts is too short-lived for Insights; its crash gets the check time instead. *No error message* means Homey most likely stopped the app, for example for using too much memory. |
 | **App not running / disabled** | An app went from running to stopped or crashed, or was disabled. |
 | **App updated** | An app got a new version. Its crash statistics start over: a new version counts as a new app. |
@@ -44,7 +44,7 @@ The first ⚠ in that order is the likely cause. When all checks are ✓ the ver
 The details below the verdict:
 
 - **When Homey stopped logging.** Insights repeats the last value until Homey is back, so this is often a few minutes before the restart itself.
-- **Sudden jumps in system memory** (more than 30 MB in one minute).
+- **Sudden jumps in Homey's own memory** (more than 30 MB in one minute). Homey's system memory log follows its own process, not the apps.
 - **Apps that behaved unusually:** RAM that grew or fell by 10 MB or more, or high CPU.
 - **Several apps changing in the same minute.** That points at the system rather than one app.
 - **Time-triggered Flows shortly before** (a fixed time, or every N minutes/hours).
@@ -76,13 +76,13 @@ Sanity Check keeps a small history (30 days, at most 60 events) for these compar
 
 Homey shows two numbers per app on its performance page:
 - **RSS** includes memory shared with other apps. When it gets too high, Homey may stop the app.
-- **PSS** is the app's own share. Athom's guideline is **at most 30 MB** per app.
+- **PSS** is the app's own share. **30 MB** per app is an often quoted target; Sanity Check uses it as its limit, but it is not in Athom's current documentation.
 
 Sanity Check records PSS every hour. An app that crashes without an error message while its PSS keeps growing is the classic sign of a memory leak.
 
 ### Load and permissions
 
-One check per hour, under one second. After an unplanned restart, once, about 75 extra read calls (about one second). After an app crash, two extra read calls for that app. Sanity Check itself stays under 30 MB PSS. No other modules than Homey itself. The app needs `homey:manager:api` because inspecting the whole Homey is its main function; apps cannot ask for narrower read-only access.
+One check per hour, under one second. After an unplanned restart, once, about 75 extra read calls (about one second). After an app crash, two extra read calls for that app. Sanity Check itself uses about 20–30 MB PSS (measured). No other modules than Homey itself. The app needs `homey:manager:api` because inspecting the whole Homey is its main function; apps cannot ask for narrower read-only access.
 
 ---
 
@@ -98,7 +98,7 @@ Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger f
 
 | Rapport | När |
 |---|---|
-| **Homey startade om** | Homey har ett nytt boot-id. Visar tid, orsak (`reboot` = planerad omstart, `unexpected` = krasch eller strömavbrott), föregående uptime, när vi senast kontrollerade före omstarten och de appar som kraschade mest under 24 h innan. Efter en **oplanerad** omstart läggs omstartsanalysen nedan till. |
+| **Homey startade om** | Homey har ett nytt boot-id. Visar tid, orsak (`reboot` = planerad omstart, `unexpected` = krasch eller strömavbrott), föregående uptime, när vi senast kontrollerade före omstarten och de appar som kraschade mest under 24 h innan. Efter en **oplanerad** omstart börjar den med ett utlåtande och omstartsanalysen nedan läggs till. |
 | **En app kraschade** | En apps kraschräknare har ökat sedan förra kontrollen. Visar antal krascher, summan för 24 h, appens minne (PSS) vid kontrollen innan och, när Homeys Insights har datan, **kraschtiden** på några sekunder när. En app som kraschar direkt när den startar lever för kort för Insights, och då får kraschen kontrolltiden i stället. *Utan felmeddelande* betyder att Homey troligen stoppade appen, till exempel för högt minne. |
 | **App körs inte / avstängd** | En app gick från körs till stoppad eller kraschad, eller stängdes av. |
 | **App uppdaterad** | En app fick en ny version. Kraschstatistiken börjar om: en ny version räknas som en ny app. |
@@ -124,7 +124,7 @@ Första ⚠ i den ordningen är den troliga orsaken. När alla kontroller är �
 Detaljerna under utlåtandet:
 
 - **När Homey slutade logga.** Insights upprepar det senaste värdet tills Homey är tillbaka, så det är ofta några minuter före själva omstarten.
-- **Plötsliga språng i systemminnet** (mer än 30 MB på en minut).
+- **Plötsliga språng i Homeys eget minne** (mer än 30 MB på en minut). Homeys logg för systemminne följer dess egen process, inte apparna.
 - **Appar som betedde sig ovanligt:** RAM som ökade eller minskade med 10 MB eller mer, eller hög CPU.
 - **Flera appar som ändrades samma minut.** Det pekar mot systemet snarare än en enskild app.
 - **Tidsstyrda Flows strax innan** (ett fast klockslag, eller var N:e minut/timme).
@@ -156,10 +156,10 @@ Sanity Check sparar en liten historik (30 dagar, högst 60 händelser) för jäm
 
 Homey visar två siffror per app på sin prestandasida:
 - **RSS** räknar med minne som delas med andra appar. Blir den för hög kan Homey stoppa appen.
-- **PSS** är appens egen andel. Athoms riktvärde är **högst 30 MB** per app.
+- **PSS** är appens egen andel. **30 MB** per app är ett ofta citerat mål; Sanity Check använder det som gräns, men det finns inte i Athoms nuvarande dokumentation.
 
 Sanity Check sparar PSS varje timme. En app som kraschar utan felmeddelande medan dess PSS växer är det klassiska tecknet på en minnesläcka.
 
 ### Belastning och behörigheter
 
-En kontroll i timmen, under en sekund. Efter en oplanerad omstart, en gång, cirka 75 extra läsanrop (ungefär en sekund). Efter en appkrasch två extra läsanrop för den appen. Sanity Check själv håller sig under 30 MB PSS. Inga andra moduler än Homey själv. Appen behöver `homey:manager:api` eftersom huvudfunktionen är att inspektera hela Homey. Appar kan inte begära en snävare läsbehörighet.
+En kontroll i timmen, under en sekund. Efter en oplanerad omstart, en gång, cirka 75 extra läsanrop (ungefär en sekund). Efter en appkrasch två extra läsanrop för den appen. Sanity Check själv använder cirka 20–30 MB PSS (uppmätt). Inga andra moduler än Homey själv. Appen behöver `homey:manager:api` eftersom huvudfunktionen är att inspektera hela Homey. Appar kan inte begära en snävare läsbehörighet.

@@ -12,7 +12,7 @@ A short guide to the Homey app that tells you why your Homey Pro restarted.
 
 Once an hour the app reads Homey's system info, memory, installed apps and available updates, and compares them with the previous check. It only **reads**; it never restarts, updates or changes anything. The first check runs 10 minutes after the app starts, so other apps have time to start after a reboot before it reads anything.
 
-Everything is an **indication, not proof**. If an app crashed 100 times before a restart, it is the likely suspect. Sanity Check shows what happened at the same time and never claims a cause.
+Everything is an **indication, not proof**. If an app crashed 100 times before a restart, it is the likely suspect. After an unplanned restart Sanity Check gives a likely cause as advice, and every line says what was measured.
 
 ### What it reports
 
@@ -27,7 +27,21 @@ Everything is an **indication, not proof**. If an app crashed 100 times before a
 
 ### Restart analysis (unplanned restarts)
 
-Homey logs every app's RAM and CPU in Insights, once a minute, and keeps it across a restart. After an unplanned restart Sanity Check reads the 30 minutes before it, once, and reports:
+Homey logs every app's RAM and CPU, and its own undervoltage, CPU temperature and load, in Insights once a minute, and keeps it across a restart. After an unplanned restart Sanity Check reads the 30 minutes before it (and 3 hours before that, as this Homey's normal), once.
+
+**Verdict first.** The report starts with a checklist, one line per check: ✓ fine, ⚠ points at a cause, – no data.
+
+| Check | ⚠ when | Advice |
+|---|---|---|
+| App crashes | an app crashed in the 24 h before | update, restart or disable that app |
+| Apps | an app's RAM grew 10 MB or more, or high CPU | the same |
+| Power | Homey measured undervoltage | check the power adapter and cable |
+| Temperature | 75 °C or more, or 10 °C above normal | give Homey free air |
+| Load | twice the normal load of this Homey | look at heavy Flows and apps |
+
+The first ⚠ in that order is the likely cause. When all checks are ✓ the verdict is **Homey itself**, with the advice to create a diagnostics report in the Homey app (Settings → General) and contact Athom support. A line about Homey itself (a memory jump in one minute, swap at the last check) supports that verdict. Without enough data the verdict says so and gives no cause. Sanity Check's own memory never counts as a cause: it runs nothing between its checks.
+
+The details below the verdict:
 
 - **When Homey stopped logging.** Insights repeats the last value until Homey is back, so this is often a few minutes before the restart itself.
 - **Sudden jumps in system memory** (more than 30 MB in one minute).
@@ -68,7 +82,7 @@ Sanity Check records PSS every hour. An app that crashes without an error messag
 
 ### Load and permissions
 
-One check per hour, under one second. After an unplanned restart, once, about 70 extra read calls (about one second). After an app crash, two extra read calls for that app. Sanity Check itself stays under 30 MB PSS. No other modules than Homey itself. The app needs `homey:manager:api` because inspecting the whole Homey is its main function; apps cannot ask for narrower read-only access.
+One check per hour, under one second. After an unplanned restart, once, about 75 extra read calls (about one second). After an app crash, two extra read calls for that app. Sanity Check itself stays under 30 MB PSS. No other modules than Homey itself. The app needs `homey:manager:api` because inspecting the whole Homey is its main function; apps cannot ask for narrower read-only access.
 
 ---
 
@@ -78,7 +92,7 @@ One check per hour, under one second. After an unplanned restart, once, about 70
 
 En gång i timmen läser appen Homeys systeminfo, minne, installerade appar och tillgängliga uppdateringar, och jämför med förra kontrollen. Den **läser** bara: den startar aldrig om, uppdaterar eller ändrar något. Första kontrollen körs 10 minuter efter att appen startat, så att andra appar hinner starta efter en omstart innan den läser något.
 
-Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger före en omstart är den den troliga misstänkta. Sanity Check visar vad som hände samtidigt och påstår aldrig en orsak.
+Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger före en omstart är den den troliga misstänkta. Efter en oplanerad omstart ger Sanity Check en trolig orsak som råd, och varje rad säger vad som mättes.
 
 ### Det appen rapporterar
 
@@ -93,7 +107,21 @@ Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger f
 
 ### Omstartsanalys (oplanerade omstarter)
 
-Homey loggar varje apps RAM och CPU i Insights, en gång i minuten, och sparar det över en omstart. Efter en oplanerad omstart läser Sanity Check de 30 minuterna innan, en gång, och rapporterar:
+Homey loggar varje apps RAM och CPU, och sin egen underspänning, CPU-temperatur och belastning, i Insights en gång i minuten, och sparar det över en omstart. Efter en oplanerad omstart läser Sanity Check de 30 minuterna innan (och 3 timmar före det, som den här Homeyns normala nivå), en gång.
+
+**Utlåtandet först.** Rapporten börjar med en checklista, en rad per kontroll: ✓ normalt, ⚠ pekar på en orsak, – data saknas.
+
+| Kontroll | ⚠ när | Råd |
+|---|---|---|
+| Appkrascher | en app kraschade under 24 h innan | uppdatera, starta om eller stäng av appen |
+| Appar | en apps RAM ökade 10 MB eller mer, eller hög CPU | samma |
+| Ström | Homey mätte underspänning | kontrollera nätadaptern och kabeln |
+| Temperatur | 75 °C eller mer, eller 10 °C över det normala | ge Homey fri luft |
+| Belastning | dubbelt så hög som den här Homeyns normala | se över tunga Flows och appar |
+
+Första ⚠ i den ordningen är den troliga orsaken. När alla kontroller är ✓ blir utlåtandet **Homey själv**, med rådet att skapa en diagnosrapport i Homey-appen (Inställningar → Allmänt) och kontakta Athom support. En rad om Homey själv (minnessprång på en minut, swap vid senaste kontrollen) stöder det utlåtandet. Med för lite data säger utlåtandet det och anger ingen orsak. Sanity Checks eget minne räknas aldrig som orsak: appen kör inget mellan sina kontroller.
+
+Detaljerna under utlåtandet:
 
 - **När Homey slutade logga.** Insights upprepar det senaste värdet tills Homey är tillbaka, så det är ofta några minuter före själva omstarten.
 - **Plötsliga språng i systemminnet** (mer än 30 MB på en minut).
@@ -134,4 +162,4 @@ Sanity Check sparar PSS varje timme. En app som kraschar utan felmeddelande meda
 
 ### Belastning och behörigheter
 
-En kontroll i timmen, under en sekund. Efter en oplanerad omstart, en gång, cirka 70 extra läsanrop (ungefär en sekund). Efter en appkrasch två extra läsanrop för den appen. Sanity Check själv håller sig under 30 MB PSS. Inga andra moduler än Homey själv. Appen behöver `homey:manager:api` eftersom huvudfunktionen är att inspektera hela Homey. Appar kan inte begära en snävare läsbehörighet.
+En kontroll i timmen, under en sekund. Efter en oplanerad omstart, en gång, cirka 75 extra läsanrop (ungefär en sekund). Efter en appkrasch två extra läsanrop för den appen. Sanity Check själv håller sig under 30 MB PSS. Inga andra moduler än Homey själv. Appen behöver `homey:manager:api` eftersom huvudfunktionen är att inspektera hela Homey. Appar kan inte begära en snävare läsbehörighet.

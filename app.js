@@ -7,6 +7,7 @@ const {
   memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
 } = require('./lib/checks');
 const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
+const { BASE, analyzeSignals } = require('./lib/verdict');
 const {
   crashMinutes, scheduledNear, addHistory, recurringTimes, crashesBeforeBoots,
 } = require('./lib/patterns');
@@ -21,8 +22,8 @@ const OBSOLETE_SETTINGS = ['thresholds', 'silentReport'];
 // One full check per hour (4 GET calls: system, memory, apps, updates), no
 // realtime subscriptions, small state in homey.settings, no growing logs.
 // After an unplanned Homey restart, once: 2 Insights reads per app (RAM, CPU),
-// Sanity Check itself included, plus system memory, for the 30 minutes before
-// the restart, and the Flows
+// Sanity Check itself included, plus system memory, undervoltage, CPU
+// temperature and load, for the 30 minutes before the restart, and the Flows
 // (2 calls) to find time triggers near it. After an app crash: 2 Insights
 // reads for that app to find the minute it crashed.
 
@@ -188,8 +189,26 @@ class SanityCheckApp extends Homey.App {
     }
     const result = analyze(series, bootDate, { system });
     if (!result.checked) return { unavailable: true };
+    result.signals = analyzeSignals(await this._systemSignals(bootDate, now), bootDate, result.quietAt ?? undefined);
     this.log(`Post-mortem: ${result.checked} app(s), ${result.findings.length} finding(s) in ${Date.now() - t0} ms`);
     return result;
+  }
+
+  // Undervoltage, CPU temperature and load before the restart, plus 3 hours
+  // before that as this Homey's normal. 3 Insights reads, once per restart.
+  async _systemSignals(bootDate, now) {
+    const bootMs = new Date(bootDate).getTime();
+    const res = resolutionFor(bootMs - WINDOW - BASE, now) || resolutionFor(bootMs - WINDOW, now);
+    const out = {};
+    for (const [key, id] of [['undervoltage', 'undervoltageratio'], ['temperature', 'temperature'], ['loadavg', 'loadavg']]) {
+      try {
+        const r = await this._api.getLogEntries('homey:manager:system', `homey:manager:system:${id}`, res);
+        out[key] = r && r.values ? trimToWindow(r.values, bootDate, WINDOW + BASE) : null;
+      } catch (err) {
+        this.error(`Insights system ${id} failed:`, err.message);
+      }
+    }
+    return out;
   }
 
   // Exact crash minutes from the app's RAM in Insights: lastHour (5 s steps)

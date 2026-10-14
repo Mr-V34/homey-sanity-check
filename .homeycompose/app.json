@@ -1,6 +1,6 @@
 {
   "id": "com.v34.sanitycheck",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "compatibility": ">=13.0.0",
   "sdk": 3,
   "platforms": [

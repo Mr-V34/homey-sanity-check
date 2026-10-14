@@ -1,6 +1,6 @@
 {
   "name": "com.v34.sanitycheck",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Sanity Check – Homey restart and app crash monitor",
   "main": "app.js",
   "author": "Peter Persson (Mr-V34) <info@v34.com>",

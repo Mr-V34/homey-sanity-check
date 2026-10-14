@@ -103,7 +103,8 @@ test('report: unplanned restart shows blind window, crashes, Insights and 7-day 
     postmortem: { checked: 33, windowMin: 30, findings: [{ id: 'y', name: 'YAHEMS', flags: ['ram_dropped'], ramStart: 93, ramEnd: 74.8, ramChange: -18.2 }] },
   }, t, fmt);
   assert.match(text, /last_check\(time=07:09:00,gap=minutes\(n=42\)\)/);
-  assert.match(text, /no_suspects/);
+  assert.match(text, /✓ v_crashes_ok/); // the verdict replaces the "no crashes" line
+  assert.doesNotMatch(text, /no_suspects/);
   assert.match(text, /pm_findings\(min=30,list=\n– YAHEMS pm_ram\(from=93,to=75,change=−18\)\)/);
   assert.match(text, /unplanned_7d\(n=2\)/);
 });

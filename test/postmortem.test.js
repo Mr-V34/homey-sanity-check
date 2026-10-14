@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { resolutionFor, windowValues, analyzeApp, analyze } = require('../lib/postmortem');
-const { checkSystem, isUnplanned, systemMemory } = require('../lib/checks');
+const { checkSystem, isUnplanned, systemMemory, processChanges } = require('../lib/checks');
 const { eventText } = require('../lib/report');
 
 const BOOT = '2026-10-14T07:50:50.643Z';
@@ -86,8 +86,11 @@ test('system: boot record keeps the last check, system memory and top PSS from b
 test('system: planned reboot is not unplanned; systemMemory tolerates failed calls', () => {
   assert.equal(isUnplanned({ rebootReason: 'reboot' }), false);
   assert.equal(isUnplanned({ rebootReason: 'unexpected' }), true);
-  assert.deepEqual(systemMemory(null, null), { free: null, swap: null, core: null });
-  assert.deepEqual(systemMemory({ freemem: 4 }, { swap: 2, types: { homey: { size: 3 } } }), { free: 4, swap: 2, core: 3 });
+  assert.deepEqual(systemMemory(null, null), { free: null, swap: null, core: null, procs: {} });
+  assert.deepEqual(
+    systemMemory({ freemem: 4 }, { swap: 2, types: { homey: { name: 'Homey', size: 3 }, 'homey:app:x': { size: 9 } } }),
+    { free: 4, swap: 2, core: 3, procs: { homey: { name: 'Homey', size: 3 } } },
+  );
 });
 
 const t = (k, tk = {}) => `${k.split('.').pop()}(${Object.entries(tk).map(([a, b]) => `${a}=${b}`).join(',')})`;
@@ -101,7 +104,7 @@ test('report: unplanned restart shows blind window, crashes, Insights and 7-day 
   }, t, fmt);
   assert.match(text, /last_check\(time=07:09:00,gap=minutes\(n=42\)\)/);
   assert.match(text, /no_suspects/);
-  assert.match(text, /pm_findings\(min=30,list=YAHEMS pm_ram\(from=93,to=75,change=−18\)\)/);
+  assert.match(text, /pm_findings\(min=30,list=\n– YAHEMS pm_ram\(from=93,to=75,change=−18\)\)/);
   assert.match(text, /unplanned_7d\(n=2\)/);
 });
 
@@ -145,4 +148,95 @@ test('condition: unplanned restart within the window; planned and older ones do 
   assert.equal(unplannedWithin(boots, 3 * 3600e3, now), true);
   assert.equal(unplannedWithin(boots, 2 * 3600e3, now), false);
   assert.equal(unplannedWithin(undefined, 3600e3, now), false);
+});
+
+// ── Sanity Check itself, the system jump and processes (v0.5.3) ───────────────
+
+test('postmortem: Sanity Check is analysed too and its finding is marked as itself', () => {
+  const mem = series(t => (Math.abs(t - (BOOT_MS - 6 * MIN)) < MIN ? 85 : 70)); // +15 and back, as 14:55
+  const r = analyze({
+    other: { name: 'Calm', mem: flat(60), cpu: flat(0) },
+    'com.v34.sanitycheck': { name: 'Sanity Check', self: true, mem, cpu: flat(0) },
+  }, BOOT);
+  assert.equal(r.checked, 2);
+  assert.equal(r.findings.length, 1);
+  assert.equal(r.findings[0].self, true);
+  const text = eventText({
+    type: 'homey_restarted', bootDate: BOOT, rebootReason: 'unexpected', suspects: [], postmortem: r,
+  }, t, fmt);
+  assert.match(text, /self_label\(name=Sanity Check\) pm_ram_jump/);
+});
+
+test('postmortem: 2026-10-14 15:00 — system +73 MB while apps fell, so the rise came from outside the apps', () => {
+  const QUIET = Math.floor((BOOT_MS - 4 * MIN) / MIN) * MIN;
+  const system = series(t => (t < QUIET ? 1400 : 1473));
+  const app = (before, last) => ({ name: 'A', mem: series(t => (t < QUIET ? before : last)), cpu: flat(0) });
+  const r = analyze({ a: app(99, 86), b: app(70, 59), c: app(66, 56) }, BOOT, { system });
+  assert.equal(r.sysJump.mb, 73);
+  assert.equal(r.sysJump.apps, -34);
+  const text = eventText({
+    type: 'homey_restarted', bootDate: BOOT, rebootReason: 'unexpected', suspects: [], postmortem: r,
+  }, t, fmt);
+  assert.match(text, /pm_sys_jump_not_apps\(apps=−34\)/);
+  assert.doesNotMatch(text, /rest=/);
+});
+
+test('postmortem: when the apps explain the system jump, the report says so', () => {
+  const QUIET = Math.floor((BOOT_MS - 4 * MIN) / MIN) * MIN;
+  const system = series(t => (t < QUIET ? 1400 : 1440));
+  const r = analyze({ a: { name: 'Grower', mem: series(t => (t < QUIET ? 50 : 88)), cpu: flat(0) } }, BOOT, { system });
+  assert.equal(r.sysJump.apps, 38);
+  const text = eventText({
+    type: 'homey_restarted', bootDate: BOOT, rebootReason: 'unexpected', suspects: [], postmortem: r,
+  }, t, fmt);
+  assert.match(text, /pm_sys_jump_apps\(apps=\+38\)/);
+  assert.doesNotMatch(text, /pm_sys_jump_outside/);
+});
+
+test('processes: changes of 20 MB or more between two checks, largest first', () => {
+  const p = (homey, video, other) => ({ procs: {
+    homey: { name: 'Homey', size: homey * 1e6 }, video: { name: 'Video', size: video * 1e6 }, other: { name: 'Annat', size: other * 1e6 },
+  } });
+  const list = processChanges(p(424, 20, 100), p(384, 19, 125));
+  assert.deepEqual(list.map(x => [x.id, Math.round(x.change / 1e6)]), [['homey', 40], ['other', -25]]);
+  assert.deepEqual(processChanges(p(1, 1, 1), null), []);
+});
+
+test('system: boot record keeps the previous hour and Sanity Check itself; report names the process', () => {
+  const procs = size => ({ homey: { name: 'Homey', size } });
+  const prev = {
+    bootId: 'a', bootDate: '2026-10-14T07:50:50Z', homeyVersion: '13.5.1',
+    sys: { free: 1, swap: 1, core: 1, procs: procs(424e6) }, sysPrev: { procs: procs(384e6) },
+    self: { pss: 29.9e6, rss: 80e6 }, apps: {},
+  };
+  const r = checkSystem({ bootId: 'b', bootDate: BOOT, rebootReason: 'unexpected', homeyVersion: '13.5.1' }, prev, BOOT_MS + 3 * MIN);
+  const b = r.state.boots[r.state.boots.length - 1];
+  assert.equal(b.before.self.pss, 29.9e6);
+  assert.equal(b.before.sysPrev.procs.homey.size, 384e6);
+  const text = eventText({ ...r.events[0], suspects: [] }, t, fmt);
+  assert.match(text, /pm_procs\(list=proc_homey\(\) \+40 MB\)/);
+});
+
+test('report: a restart report puts each part on its own line', () => {
+  const text = eventText({
+    type: 'homey_restarted', bootDate: BOOT, rebootReason: 'unexpected', prevUptimeMs: 3600e3,
+    before: { lastCheck: '2026-10-14T07:09:00Z' }, suspects: [], scheduled: [],
+    postmortem: { checked: 33, windowMin: 30, quietAt: BOOT_MS - 4 * MIN, findings: [] },
+  }, t, fmt);
+  const lines = text.split('\n');
+  assert.ok(lines[0].startsWith('homey_restarted('));
+  assert.ok(lines.some(l => l.startsWith('last_check(')));
+  assert.ok(lines.some(l => l.startsWith('pm_quiet(')));
+  assert.ok(lines.some(l => l.startsWith('pm_none(')));
+  assert.ok(lines.some(l => l.startsWith('sched_none(')));
+});
+
+test('postmortem: apps explain part of the system jump → the rest is named as outside', () => {
+  const QUIET = Math.floor((BOOT_MS - 4 * MIN) / MIN) * MIN;
+  const system = series(t => (t < QUIET ? 1400 : 1460));
+  const r = analyze({ a: { name: 'Grower', mem: series(t => (t < QUIET ? 50 : 70)), cpu: flat(0) } }, BOOT, { system });
+  const text = eventText({
+    type: 'homey_restarted', bootDate: BOOT, rebootReason: 'unexpected', suspects: [], postmortem: r,
+  }, t, fmt);
+  assert.match(text, /pm_sys_jump_outside\(apps=\+20,rest=40\)/);
 });

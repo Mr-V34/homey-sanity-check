@@ -20,8 +20,9 @@ const OBSOLETE_SETTINGS = ['thresholds', 'silentReport'];
 // Read-only: every Web API call below is a GET with a *.readonly scope.
 // One full check per hour (4 GET calls: system, memory, apps, updates), no
 // realtime subscriptions, small state in homey.settings, no growing logs.
-// After an unplanned Homey restart, once: 2 Insights reads per app (RAM, CPU)
-// plus system memory, for the 30 minutes before the restart, and the Flows
+// After an unplanned Homey restart, once: 2 Insights reads per app (RAM, CPU),
+// Sanity Check itself included, plus system memory, for the 30 minutes before
+// the restart, and the Flows
 // (2 calls) to find time triggers near it. After an app crash: 2 Insights
 // reads for that app to find the minute it crashed.
 
@@ -83,6 +84,7 @@ class SanityCheckApp extends Homey.App {
 
       const memory = await this._get('system.getMemoryInfo', () => this._api.getMemoryInfo());
       const pssById = pssFromMemoryInfo(memory);
+      next.sysPrev = prev.sys || null; // one hour back, to see which process grew
       next.sys = systemMemory(info, memory);
 
       const apps = await this._get('apps.getApps', () => this._api.getApps());
@@ -153,23 +155,30 @@ class SanityCheckApp extends Homey.App {
 
   // Homey's own Insights (RAM and CPU per app) for the minutes before bootDate.
   // Apps that were disabled before the restart have no data and are skipped.
+  // Sanity Check is in the list too: its RAM peaked before both restarts on
+  // 2026-10-14, and without its own series it could never point at itself.
   async _postmortem(bootDate, appsState, now) {
     const t0 = Date.now();
     const res = resolutionFor(new Date(bootDate).getTime() - WINDOW, now);
     if (!res) return { unavailable: true };
+    const entries = async (id, kind) => {
+      try {
+        const r = await this._api.getLogEntries('homey:manager:apps', `homey:manager:apps:${id}-${kind}`, res);
+        return (r && r.values) || null;
+      } catch (err) {
+        return null; // no log for this app (e.g. never ran): nothing to judge
+      }
+    };
     const series = {};
     for (const [id, a] of Object.entries(appsState || {})) {
       if (a.enabled === false) continue;
-      const entries = async kind => {
-        try {
-          const r = await this._api.getLogEntries('homey:manager:apps', `homey:manager:apps:${id}-${kind}`, res);
-          return (r && r.values) || null;
-        } catch (err) {
-          return null; // no log for this app (e.g. never ran): nothing to judge
-        }
-      };
-      series[id] = { name: a.name, mem: await entries('mem'), cpu: await entries('cpu') };
+      series[id] = { name: a.name, mem: await entries(id, 'mem'), cpu: await entries(id, 'cpu') };
     }
+    const selfId = this.homey.manifest.id;
+    series[selfId] = {
+      name: this.homey.manifest.name.en, self: true,
+      mem: await entries(selfId, 'mem'), cpu: await entries(selfId, 'cpu'),
+    };
     let system = null;
     try {
       const r = await this._api.getLogEntries('homey:manager:system', 'homey:manager:system:memory', res);

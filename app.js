@@ -3,26 +3,23 @@
 const Homey = require('homey');
 const { ReadOnlyApi } = require('./lib/web-api');
 const {
-  checkSystem, checkFirmware, checkApps, checkSensors, suspects, DAY,
-  memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory,
+  checkSystem, checkFirmware, checkApps, suspects, DAY,
+  memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
 } = require('./lib/checks');
 const { WINDOW, resolutionFor, analyze } = require('./lib/postmortem');
 const {
   crashMinutes, scheduledNear, addHistory, recurringTimes, crashesBeforeBoots,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
-const {
-  DEFAULT_THRESHOLDS, DEFAULT_SUMMARY_HOUR, CHECK_INTERVAL, FIRST_CHECK_DELAY,
-  SILENT_REPORT_MODES, DEFAULT_SILENT_REPORT,
-} = require('./lib/constants');
+const { DEFAULT_SUMMARY_HOUR, CHECK_INTERVAL, FIRST_CHECK_DELAY } = require('./lib/constants');
 
-const SENSOR_EVENTS = ['sensor_silent', 'sensor_back'];
+// Settings and state of the silent-device check, removed in 0.5.0.
+const OBSOLETE_SETTINGS = ['thresholds', 'silentReport'];
 
 // ── Sanity Check ──────────────────────────────────────────────────────────────
 // Read-only: every Web API call below is a GET with a *.readonly scope.
-// One full check per hour (5 GET calls: system, memory, apps, updates,
-// devices; zones only when a device report goes out), no realtime
-// subscriptions, small state in homey.settings, no growing logs.
+// One full check per hour (4 GET calls: system, memory, apps, updates), no
+// realtime subscriptions, small state in homey.settings, no growing logs.
 // After an unplanned Homey restart, once: 2 Insights reads per app (RAM, CPU)
 // plus system memory, for the 30 minutes before the restart, and the Flows
 // (2 calls) to find time triggers near it. After an app crash: 2 Insights
@@ -35,12 +32,19 @@ class SanityCheckApp extends Homey.App {
     this.log(`Homey:    ${this.homey.version}`);
 
     this._api = new ReadOnlyApi(this.homey);
+    for (const key of OBSOLETE_SETTINGS) {
+      if (this.homey.settings.get(key) != null) this.homey.settings.unset(key);
+    }
     this._running = false;
 
     this._triggerRestarted = this.homey.flow.getTriggerCard('homey_restarted');
     this._triggerCrashed   = this.homey.flow.getTriggerCard('app_crashed');
     this._triggerReport    = this.homey.flow.getTriggerCard('report');
     this.homey.flow.getActionCard('run_check').registerRunListener(() => this.runCheck({ force: true }));
+    this.homey.flow.getConditionCard('unplanned_restart').registerRunListener(({ hours }) => {
+      const boots = (this.homey.settings.get('state') || {}).boots;
+      return unplannedWithin(boots, hours * 60 * 60 * 1000, Date.now());
+    });
 
     this._firstTimeout = this.homey.setTimeout(() => this.runCheck(), FIRST_CHECK_DELAY);
     this._interval     = this.homey.setInterval(() => this.runCheck(), CHECK_INTERVAL);
@@ -61,10 +65,8 @@ class SanityCheckApp extends Homey.App {
     try {
       const now   = Date.now();
       const prev  = this.homey.settings.get('state') || {};
-      // 0.1.0 flagged devices whose lastSeenAt was lost in a reboot; start the
-      // silent list over once so those false positives don't get a "back" report.
-      if (prev.schema !== 2) prev.silent = [];
-      const next  = { ...prev, schema: 2 };
+      const next  = { ...prev, schema: 3 };
+      delete next.silent; // silent-device list, removed in 0.5.0
       const events = [];
       const firstRun = !prev.bootId; // baseline only: show a summary so the user sees it works
 
@@ -100,15 +102,6 @@ class SanityCheckApp extends Homey.App {
         events.push(...r.events);
       }
 
-      let silentNow = [];
-      const devices = await this._get('devices.getDevices', () => this._api.getDevices());
-      if (devices) {
-        const r = checkSensors(Object.values(devices), prev, this._thresholds(), now, next.bootDate);
-        Object.assign(next, r.state);
-        events.push(...r.events);
-        silentNow = r.current;
-      }
-
       // History of unplanned restarts and crashes, with the best time we have.
       const seen = [];
       const since = prev.lastCheck ? new Date(prev.lastCheck.at).getTime() : now - 60 * 60 * 1000;
@@ -137,7 +130,7 @@ class SanityCheckApp extends Homey.App {
       next.lastCheck = { at: new Date(now).toISOString(), ms: Date.now() - t0 };
       this.homey.settings.set('state', next);
       await this._emit(events);
-      await this._maybeDailySummary(next, silentNow, now, force || firstRun);
+      await this._maybeDailySummary(next, now, force || firstRun);
 
       this.log(`Check done in ${next.lastCheck.ms} ms, ${events.length} event(s), heap ${this._heapMb()} MB`);
       return true;
@@ -216,37 +209,11 @@ class SanityCheckApp extends Homey.App {
     return scheduledNear([...Object.values(adv || {}), ...Object.values(basic || {})], at, t => this._local(t));
   }
 
-  // Zones are only fetched when a device report is actually going out.
-  async _addZoneNames(items) {
-    const withZone = items.filter(e => e.zone);
-    if (!withZone.length) return;
-    const zones = await this._get('zones.getZones', () => this._api.getZones());
-    for (const e of withZone) e.zoneName = zones && zones[e.zone] ? zones[e.zone].name : null;
-  }
-
-  _silentMode() {
-    const mode = this.homey.settings.get('silentReport');
-    return SILENT_REPORT_MODES.includes(mode) ? mode : DEFAULT_SILENT_REPORT;
-  }
-
   // ── Output ──────────────────────────────────────────────────────────────────
 
   async _emit(allEvents) {
     const t = (key, tokens) => this.homey.__(key, tokens);
-    const mode = this._silentMode();
-    const sensorEvents = allEvents.filter(e => SENSOR_EVENTS.includes(e.type));
-    // 'daily': device changes only appear in the daily summary.
-    const events = mode === 'each' ? allEvents : allEvents.filter(e => !SENSOR_EVENTS.includes(e.type));
-    if (mode !== 'daily') await this._addZoneNames(sensorEvents);
-
-    if (mode === 'grouped' && sensorEvents.length) {
-      const text = sensorEvents.map(e => eventText(e, t, d => this._fmt(d))).filter(Boolean).join('\n');
-      this.log('Report:', text);
-      await this.homey.notifications.createNotification({ excerpt: text }).catch(this.error);
-      await this._triggerReport.trigger({ text, type: 'sensors' }).catch(this.error);
-    }
-
-    for (const e of events) {
+    for (const e of allEvents) {
       const text = eventText(e, t, d => this._fmt(d));
       if (!text) continue;
       this.log('Report:', text);
@@ -271,7 +238,7 @@ class SanityCheckApp extends Homey.App {
     }
   }
 
-  async _maybeDailySummary(state, silentNow, now, force) {
+  async _maybeDailySummary(state, now, force) {
     const tz = this.homey.clock.getTimezone();
     const parts = Object.fromEntries(new Intl.DateTimeFormat('sv-SE', {
       timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -292,7 +259,6 @@ class SanityCheckApp extends Homey.App {
       topCrashers:  suspects(apps, now),
       updates:      Object.values(apps).filter(a => a.update).map(a => ({ name: a.name, version: a.version, update: a.update })),
       firmware:     state.firmwareAvailable,
-      silent:       silentNow,
       memory:       memoryReport(apps, state.pssAtSummary),
       self:         state.self,
       sys:          state.sys,
@@ -303,7 +269,6 @@ class SanityCheckApp extends Homey.App {
     };
     // Snapshot for the "+N MB since yesterday" in the next summary.
     if (!force) this.homey.settings.set('state', { ...state, pssAtSummary: pssSnapshot(apps) });
-    await this._addZoneNames(silentNow);
     const text = dailySummary(summary, (k, tk) => this.homey.__(k, tk), d => this._fmt(d));
     this.log('Daily summary:', text);
     await this.homey.notifications.createNotification({ excerpt: text }).catch(this.error);
@@ -311,10 +276,6 @@ class SanityCheckApp extends Homey.App {
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  _thresholds() {
-    return { ...DEFAULT_THRESHOLDS, ...(this.homey.settings.get('thresholds') || {}) };
-  }
 
   _local(t) {
     const p = Object.fromEntries(new Intl.DateTimeFormat('sv-SE', {

@@ -3,14 +3,11 @@
        background (full 960×960 canvas). Homey masks the app icon and places
        the brand colour (#E05000) behind it, so this renders as a clipboard on
        an orange tile, same style as ToGrill. The check and the clip's hole are
-       cut out (evenodd). Scaled to 80 % so the corners stay inside the round
-       tile Homey shows on app pages. -->
-  <g transform="translate(96 96) scale(0.8)">
+       cut out (evenodd). -->
   <path fill-rule="evenodd" fill="#111111" d="
     M260 180 H700 A60 60 0 0 1 760 240 V820 A60 60 0 0 1 700 880 H260 A60 60 0 0 1 200 820 V240 A60 60 0 0 1 260 180 Z
     M301.7 558.3 L445 701 L670.8 435.6 L609.2 384.4 L445 593 L358.3 501.7 Z"/>
   <path fill-rule="evenodd" fill="#111111" d="
     M390 110 H570 A45 45 0 0 1 615 155 V205 A45 45 0 0 1 570 250 H390 A45 45 0 0 1 345 205 V155 A45 45 0 0 1 390 110 Z
     M480 124 A26 26 0 1 0 480 176 A26 26 0 1 0 480 124 Z"/>
-  </g>
 </svg>

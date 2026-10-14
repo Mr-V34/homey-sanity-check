@@ -15,14 +15,9 @@
     "app_not_running": "__app__ is not running (state: __state__).",
     "app_version_changed": "__app__ updated: __from__ → __to__. Crash statistics start over.",
     "app_update_available": "__app__: version __update__ is available, consider updating.",
-    "sensor_silent": "Silent device: __name__ (__zone__) has not reported for __age__.",
-    "sensor_back": "__name__ (__zone__) is reporting again.",
     "daily_title": "Daily health check – Homey __version__, up since __since__ (reason: __reason__).",
     "daily_restarts": "__n__ restart(s) in the last 24 h.",
     "daily_updates": "Updates available: __list__.",
-    "daily_silent": "Silent devices: __n__.",
-    "daily_silent_list": "Silent devices (__n__): __list__.",
-    "and_more": "and __n__ more.",
     "no_message": "no error message",
     "memory_before": "Memory at the previous check: PSS __pss__.",
     "killed_hint": "No error message – Homey may have stopped the app, e.g. for too much memory.",
@@ -52,15 +47,10 @@
   },
   "settings": {
     "title": "Sanity Check",
-    "subtitle": "Silent-device limits and time of the daily summary.",
-    "thresholds": "Hours without a report before a device counts as silent",
+    "subtitle": "Time of the daily summary.",
     "summary": "Daily summary",
     "summary_hour": "Hour of day (0–23)",
     "save": "Save",
-    "saved": "Saved",
-    "silent_report": "Report silent devices",
-    "silent_daily": "Only in the daily summary",
-    "silent_grouped": "One message per check, all devices together",
-    "silent_each": "One message per device"
+    "saved": "Saved"
   }
 }

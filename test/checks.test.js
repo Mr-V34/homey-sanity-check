@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  HOUR, checkSystem, checkFirmware, checkApps, checkSensors, suspects,
+  HOUR, checkSystem, checkFirmware, checkApps, suspects,
 } = require('../lib/checks');
 const { eventText, duration } = require('../lib/report');
 
@@ -134,77 +134,6 @@ test('suspects: ranks apps by crashes in the 24 h before the boot', () => {
   assert.deepEqual(s.map(x => [x.id, x.crashes]), [['a', 34], ['b', 3]]);
 });
 
-// ── Sensors ───────────────────────────────────────────────────────────────────
-
-test('sensors: silent once, then back; virtual (no lastSeenAt) and unmonitored skipped', () => {
-  const th = { sensor: 24, light: 0 };
-  const devs = [
-    { id: '1', name: 'Dörr', class: 'sensor', zone: 'z', lastSeenAt: new Date(T0 - 30 * HOUR).toISOString() },
-    { id: '2', name: 'Knapp', class: 'sensor', lastSeenAt: null },
-    { id: '3', name: 'Lampa', class: 'light', lastSeenAt: new Date(T0 - 99 * HOUR).toISOString() },
-  ];
-  const r1 = checkSensors(devs, {}, th, T0);
-  assert.deepEqual(r1.events.map(e => [e.type, e.id]), [['sensor_silent', '1']]);
-  const r2 = checkSensors(devs, r1.state, th, T0 + HOUR);
-  assert.equal(r2.events.length, 0);
-  devs[0].lastSeenAt = new Date(T0).toISOString();
-  const r3 = checkSensors(devs, r2.state, th, T0 + 2 * HOUR);
-  assert.deepEqual(r3.events.map(e => e.type), ['sensor_back']);
-});
-
-test('sensors: no lastSeenAt → falls back to newest capability lastUpdated (Aqara case)', () => {
-  const devs = [{
-    id: 'aq', name: 'Temperatur', class: 'sensor', lastSeenAt: null,
-    capabilitiesObj: {
-      measure_temperature: { lastUpdated: new Date(T0 - 661 * HOUR).toISOString() },
-      measure_battery:     { lastUpdated: new Date(T0 - 700 * HOUR).toISOString() },
-      alarm_x:             { lastUpdated: null },
-    },
-  }];
-  const r = checkSensors(devs, {}, { sensor: 24 }, T0);
-  assert.equal(r.events[0].type, 'sensor_silent');
-  assert.equal(r.events[0].ageMs, 661 * HOUR);
-});
-
-test('sensors: right after a reboot, lastSeenAt is gone → no false alarm (real case: "Tak 3")', () => {
-  const boot = new Date(T0 - 5 * 60000).toISOString(); // Homey up 5 min
-  const lamp = {
-    id: 'tak3', name: 'Tak 3', class: 'light', lastSeenAt: null,
-    capabilitiesObj: { onoff: { lastUpdated: new Date(T0 - 27 * HOUR).toISOString() } },
-  };
-  const r = checkSensors([lamp], {}, { light: 12 }, T0, boot);
-  assert.equal(r.events.length, 0);
-  assert.deepEqual(r.state.silent, []);
-});
-
-test('sensors: after a reboot an already-silent Aqara stays silent without a new report', () => {
-  const boot = new Date(T0 - 5 * 60000).toISOString();
-  const aqara = {
-    id: 'aq', name: 'Temperatur', class: 'sensor', lastSeenAt: null,
-    capabilitiesObj: { measure_temperature: { lastUpdated: new Date(T0 - 661 * HOUR).toISOString() } },
-  };
-  const r = checkSensors([aqara], { silent: ['aq'] }, { sensor: 24 }, T0, boot);
-  assert.equal(r.events.length, 0);
-  assert.deepEqual(r.state.silent, ['aq']);
-});
-
-test('sensors: once uptime passes the threshold, a device without lastSeenAt is judged again', () => {
-  const boot = new Date(T0 - 25 * HOUR).toISOString();
-  const aqara = {
-    id: 'aq', name: 'Temperatur', class: 'sensor', lastSeenAt: null,
-    capabilitiesObj: { measure_temperature: { lastUpdated: new Date(T0 - 661 * HOUR).toISOString() } },
-  };
-  const r = checkSensors([aqara], {}, { sensor: 24 }, T0, boot);
-  assert.deepEqual(r.events.map(e => e.type), ['sensor_silent']);
-});
-
-test('sensors: lamp with fresh lastSeenAt after a reboot is fine immediately', () => {
-  const boot = new Date(T0 - 5 * 60000).toISOString();
-  const lamp = { id: 'tak3', name: 'Tak 3', class: 'light', lastSeenAt: new Date(T0 - 60000).toISOString() };
-  const r = checkSensors([lamp], {}, { light: 12 }, T0, boot);
-  assert.equal(r.events.length, 0);
-});
-
 // ── Report wording ────────────────────────────────────────────────────────────
 
 test('report: restart text names the suspect as a possibility, with update', () => {
@@ -224,18 +153,6 @@ test('report: durations', () => {
   assert.equal(duration(5 * HOUR, t), 'report.hours:5');
   assert.equal(duration(72 * HOUR, t), 'report.days:3');
   assert.equal(duration(null, t), 'report.unknown:');
-});
-
-test('report: daily summary lists silent devices with zone and age, capped at 10', () => {
-  const { dailySummary } = require('../lib/report');
-  const t = (k, tk = {}) => `${k}${JSON.stringify(tk)}`;
-  const base = { homeyVersion: '13.5.1', bootDate: 'x', rebootReason: 'reboot', restarts24h: 0, topCrashers: [], updates: [], firmware: null };
-  const one = dailySummary({ ...base, silent: [{ name: 'Vattenläckagedetektor', zoneName: 'Badrum', ageMs: 121 * 24 * HOUR }] }, t, () => 'x');
-  assert.match(one, /report\.daily_silent_list\{"n":1,"list":"Vattenläckagedetektor \(Badrum, report\.days/);
-  const many = dailySummary({ ...base, silent: Array.from({ length: 12 }, (_, i) => ({ name: `S${i}`, ageMs: HOUR })) }, t, () => 'x');
-  assert.match(many, /report\.and_more\{"n":2\}/);
-  const none = dailySummary({ ...base, silent: [] }, t, () => 'x');
-  assert.match(none, /report\.daily_silent\{"n":0\}/);
 });
 
 // ── Memory (RSS/PSS) ──────────────────────────────────────────────────────────

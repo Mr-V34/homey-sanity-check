@@ -8,10 +8,11 @@ Each morning a daily health check lands on your timeline: Homey version and upti
 - One check per hour. The app only reads from Homey and never changes anything.
 - Restart detection uses Homey's boot id and restart reason: `reboot` for a planned restart, `unexpected` for a crash or power loss.
 - Crash counts are kept per app version. A new version starts with a clean slate.
+- After an unplanned restart the app reads Homey's own Insights (RAM/CPU per app, system memory) for the 30 minutes before it, and the Flows with time triggers shortly before. A small 30-day history links restarts and crashes to the time of day.
 - A device counts as silent when it has not reported within a limit you set per device class. Right after a Homey restart, devices are only judged once Homey has been running long enough.
 
 ## Permissions
-`homey:manager:api` gives read access to system info, apps, updates, devices and zones. Apps cannot request narrower scopes, and inspecting the whole Homey is this app's main function.
+`homey:manager:api` gives read access to system info, apps, updates, devices, zones, Insights and Flows. Apps cannot request narrower scopes, and inspecting the whole Homey is this app's main function.
 
 ## Documentation
 **[Full manual — every report and setting explained (EN/SV)](docs/MANUAL.md)**

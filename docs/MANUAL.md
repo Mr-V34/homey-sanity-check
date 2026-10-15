@@ -59,6 +59,7 @@ Sanity Check keeps a small history (30 days, at most 60 events) for these compar
 | Setting | What it does |
 |---|---|
 | **Daily summary** | Hour of the day (0–23) for the daily health check. Default 08. |
+| **Detail** | *Short* (default): only what needs attention. *Detailed*: the same, followed by everything that was measured: restarts, the largest apps, memory and swap, storage, backup, firmware channel and Sanity Check's own memory. |
 
 ### Flow cards
 
@@ -140,6 +141,7 @@ Sanity Check sparar en liten historik (30 dagar, högst 60 händelser) för jäm
 | Inställning | Vad den gör |
 |---|---|
 | **Daglig sammanfattning** | Klockslag (0–23) för den dagliga hälsokontrollen. Standard 08. |
+| **Detaljnivå** | *Kort* (standard): bara det som behöver uppmärksamhet. *Detaljerad*: samma sak, följt av allt som mättes: omstarter, största appar, minne och swap, lagring, säkerhetskopia, firmwarekanal och Sanity Checks eget minne. |
 
 ### Flow-kort
 

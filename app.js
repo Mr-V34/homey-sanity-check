@@ -4,7 +4,7 @@ const Homey = require('homey');
 const { ReadOnlyApi } = require('./lib/web-api');
 const {
   checkSystem, checkFirmware, checkApps, suspects, DAY,
-  memoryGrowth, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
+  memoryGrowth, largestApps, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
   backupStatus, firmwareSettings, storageStatus, swapDue, swapApps,
 } = require('./lib/checks');
 const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
@@ -13,7 +13,9 @@ const {
   crashMinutes, scheduledNear, addHistory, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
-const { DEFAULT_SUMMARY_HOUR, CHECK_INTERVAL, FIRST_CHECK_DELAY } = require('./lib/constants');
+const {
+  DEFAULT_SUMMARY_HOUR, SUMMARY_DETAILS, CHECK_INTERVAL, FIRST_CHECK_DELAY,
+} = require('./lib/constants');
 
 // Settings and state of the silent-device check, removed in 0.5.0.
 const OBSOLETE_SETTINGS = ['thresholds', 'silentReport'];
@@ -319,11 +321,13 @@ class SanityCheckApp extends Homey.App {
       homeyVersion: state.homeyVersion,
       bootDate:     state.bootDate,
       rebootReason: state.rebootReason,
+      restarts24h:  (state.boots || []).filter(b => now - new Date(b.bootDate).getTime() < DAY).length,
       unplanned24h: (state.boots || []).filter(b => isUnplanned(b) && now - new Date(b.bootDate).getTime() < DAY).length,
       topCrashers:  suspects(apps, now),
       updates:      Object.values(apps).filter(a => a.update).map(a => ({ name: a.name, version: a.version, update: a.update })),
       firmware:     state.firmwareAvailable,
       grew:         memoryGrowth(apps, state.pssAtSummary),
+      largest:      largestApps(apps, state.pssAtSummary),
       self:         state.self,
       sys:          state.sys,
       recurring:    [
@@ -343,7 +347,9 @@ class SanityCheckApp extends Homey.App {
     }
     // Snapshot for the "+N MB since yesterday" in the next summary.
     if (!force) this.homey.settings.set('state', { ...state, pssAtSummary: pssSnapshot(apps) });
-    const text = dailySummary(summary, (k, tk) => this.homey.__(k, tk), d => this._fmt(d));
+    const detail = this.homey.settings.get('summaryDetail');
+    const text = dailySummary(summary, (k, tk) => this.homey.__(k, tk), d => this._fmt(d),
+      SUMMARY_DETAILS.includes(detail) ? detail : SUMMARY_DETAILS[0]);
     this.log('Daily summary:', text);
     await this.homey.notifications.createNotification({ excerpt: text }).catch(this.error);
     await this._triggerReport.trigger({ text, type: 'daily_summary' }).catch(this.error);

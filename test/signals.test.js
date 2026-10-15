@@ -135,3 +135,21 @@ test('daily summary: a late backup already reported is not repeated', () => {
   const backup = { last: Date.parse('2026-09-22T23:46:30Z'), auto: true, days: 22, overdue: true, repeat: true };
   assert.match(dailySummary(day({ backup }), t, fmt), /daily_ok\(\)$/);
 });
+
+test('daily summary, detailed: same head and findings, then everything measured', () => {
+  const s = day({
+    restarts24h: 1,
+    largest: [{ id: 'd', name: 'Device Capabilities', pss: 53e6, change: 6e6 }, { id: 'r', name: 'Roborock Cloud', pss: 50e6, change: -8e6 }],
+    swapApps: { t: NOW, swap: 74e6, top: [{ id: 'v', name: 'Virtuella enheter', swap: 4e6 }] },
+  });
+  assert.equal(dailySummary(s, t, fmt, 'short').split('\n').length, 1);
+  const lines = dailySummary(s, t, fmt, 'full').split('\n');
+  assert.match(lines[0], /daily_ok\(\)$/);
+  assert.deepEqual(lines.slice(1).map(l => l.split('(')[0]), [
+    'v_details', 'daily_restarts', 'daily_no_crashes', 'daily_largest', 'daily_system',
+    'swap_apps', 'daily_storage', 'backup_ok', 'daily_firmware', 'daily_self',
+  ]);
+  assert.match(lines[2], /n=1,unplanned=0/);
+  assert.match(lines[4], /Device Capabilities 53 MB \(\+6 MB\), Roborock Cloud 50 MB \(−8 MB\)/);
+  assert.match(lines[9], /channel=stable,auto=off\(\)/);
+});

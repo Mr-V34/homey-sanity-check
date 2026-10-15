@@ -97,14 +97,24 @@
     "daily_grew": "Minnet växte sedan i går: __list__.",
     "daily_swap": "Swap __swap__ (Homey själv __core__).",
     "daily_swap_apps": "Mest i swap: __list__.",
-    "daily_channel": "Homey följer uppdateringskanalen __channel__."
+    "daily_channel": "Homey följer uppdateringskanalen __channel__.",
+    "daily_restarts": "Omstarter senaste 24 h: __n__, varav __unplanned__ oväntade.",
+    "daily_no_crashes": "Inga appkrascher senaste 24 h.",
+    "daily_largest": "Största appar: __list__.",
+    "daily_system": "Homey: ledigt minne __free__, swap __swap__, Homey själv __core__.",
+    "daily_firmware": "Firmware: kanal __channel__, automatisk uppdatering __auto__.",
+    "on": "på",
+    "off": "av"
   },
   "settings": {
     "title": "Sanity Check",
-    "subtitle": "Tid för den dagliga sammanfattningen.",
+    "subtitle": "Den dagliga sammanfattningen: när den kommer och hur mycket den visar.",
     "summary": "Daglig sammanfattning",
     "summary_hour": "Klockslag (0–23)",
     "save": "Spara",
-    "saved": "Sparat"
+    "saved": "Sparat",
+    "summary_detail": "Detaljnivå",
+    "detail_short": "Kort – bara det som behöver uppmärksamhet",
+    "detail_full": "Detaljerad – allt som mättes"
   }
 }

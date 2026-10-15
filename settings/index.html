@@ -15,6 +15,13 @@
       <label class="homey-form-label" for="summaryHour" data-i18n="settings.summary_hour"></label>
       <input class="homey-form-input" id="summaryHour" type="number" min="0" max="23" step="1">
     </div>
+    <div class="homey-form-group">
+      <label class="homey-form-label" for="summaryDetail" data-i18n="settings.summary_detail"></label>
+      <select class="homey-form-select" id="summaryDetail">
+        <option value="short"></option>
+        <option value="full"></option>
+      </select>
+    </div>
   </fieldset>
 
   <button id="save" class="homey-button-primary-full" data-i18n="settings.save"></button>
@@ -22,20 +29,31 @@
   <script type="text/javascript">
     // Keep in sync with lib/constants.js
     const DEFAULT_SUMMARY_HOUR = 8;
+    const SUMMARY_DETAILS = ['short', 'full'];
 
     function onHomeyReady(Homey) {
       const hourInput = document.getElementById('summaryHour');
+      const detailInput = document.getElementById('summaryDetail');
+      // data-i18n is documented for headings only, so the options get their text here.
+      for (const option of detailInput.options) option.textContent = Homey.__(`settings.detail_${option.value}`);
 
       Homey.get('summaryHour', (err, h) => {
         hourInput.value = Number.isInteger(h) ? h : DEFAULT_SUMMARY_HOUR;
-        Homey.ready();
+        Homey.get('summaryDetail', (err2, d) => {
+          detailInput.value = SUMMARY_DETAILS.includes(d) ? d : SUMMARY_DETAILS[0];
+          Homey.ready();
+        });
       });
 
       document.getElementById('save').addEventListener('click', () => {
         const hour = Math.min(23, Math.max(0, parseInt(hourInput.value, 10) || 0));
+        const detail = SUMMARY_DETAILS.includes(detailInput.value) ? detailInput.value : SUMMARY_DETAILS[0];
         Homey.set('summaryHour', hour, err => {
           if (err) return Homey.alert(err);
-          Homey.alert(Homey.__('settings.saved'));
+          Homey.set('summaryDetail', detail, err2 => {
+            if (err2) return Homey.alert(err2);
+            Homey.alert(Homey.__('settings.saved'));
+          });
         });
       });
     }

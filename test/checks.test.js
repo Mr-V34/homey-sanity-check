@@ -157,7 +157,7 @@ test('report: durations', () => {
 
 // ── Memory (RSS/PSS) ──────────────────────────────────────────────────────────
 
-const { memoryReport, pssSnapshot, pssFromMemoryInfo, MB } = require('../lib/checks');
+const { memoryGrowth, pssSnapshot, pssFromMemoryInfo, MB } = require('../lib/checks');
 
 test('memory: PSS parsed from real getMemoryInfo shape', () => {
   const info = { total: 1, types: {
@@ -196,14 +196,14 @@ test('memory: suspects carry max PSS and "no message" only when every crash lack
   assert.deepEqual(s.map(x => [x.id, x.pss, x.noMessage]), [['a', 140e6, true], ['b', null, false]]);
 });
 
-test('memory: report lists apps over 30 MB PSS with change since snapshot', () => {
+test('memory: only apps that grew 10 MB or more since the snapshot count', () => {
   const apps = {
     big: { name: 'Big', pss: 52 * MB }, mid: { name: 'Mid', pss: 31 * MB },
     ok: { name: 'Ok', pss: 20 * MB }, none: { name: 'None', pss: null },
   };
-  const m = memoryReport(apps, { big: 44 * MB });
-  assert.equal(m.count, 2);
-  assert.deepEqual(m.top.map(x => [x.id, x.change]), [['big', 8 * MB], ['mid', null]]);
+  const g = memoryGrowth(apps, { big: 44 * MB, mid: 18 * MB, ok: 30 * MB });
+  assert.deepEqual(g.map(x => [x.id, x.change]), [['mid', 13 * MB]]); // big +8 is below the bar, ok shrank
+  assert.deepEqual(memoryGrowth(apps, {}), []); // no snapshot yet: nothing to compare
   assert.deepEqual(pssSnapshot(apps), { big: 52 * MB, mid: 31 * MB, ok: 20 * MB });
 });
 

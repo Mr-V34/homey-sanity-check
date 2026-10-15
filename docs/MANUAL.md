@@ -24,7 +24,7 @@ Everything is an **indication, not proof**. If an app crashed 100 times before a
 | **App updated** | An app got a new version. Its crash statistics start over: a new version counts as a new app. |
 | **Update available** | A newer app version or Homey firmware is available. |
 | **Homey slowed down** | Homey's own hardware flags show undervoltage, a temperature limit or a slowed-down processor since it last started. Once per flag and start. |
-| **Daily health check** | Once a day: Homey version, up since, restart reason, restarts in the last 24 h, top crashing apps, pending updates, apps above 30 MB PSS (with growth since the day before), free memory, swap and the size of Homey itself, free storage, the apps with most memory in swap (when swap was high), the last successful backup (⚠ when automatic backups are on but none succeeded for 7 days), the firmware channel and automatic updates, recurring times, and Sanity Check's own memory. |
+| **Daily health check** | Once a day, only what needs attention. When nothing stands out it is one line: Homey version, up since, restart reason and "All looks normal". Otherwise each finding gets a ⚠: unexpected restarts or app crashes in the last 24 h, an app whose memory grew 10 MB or more since the day before, swap of 64 MB or more (with the apps that have most in swap), low storage (under 10 % free), a backup that hasn't succeeded for 7 days while automatic backups are on (said once, not every day), recurring times, and Sanity Check itself above 30 MB. Pending app or firmware updates, and an update channel other than stable, are listed after the findings. |
 
 ### Restart analysis (unplanned restarts)
 
@@ -105,7 +105,7 @@ Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger f
 | **App uppdaterad** | En app fick en ny version. Kraschstatistiken börjar om: en ny version räknas som en ny app. |
 | **Uppdatering finns** | En nyare appversion eller Homey-firmware finns. |
 | **Homey sänkte takten** | Homeys egna hårdvaruflaggor visar underspänning, temperaturgräns eller sänkt processortakt sedan den senast startade. En gång per flagga och start. |
-| **Daglig hälsokontroll** | En gång per dygn: Homey-version, igång sedan, orsak till senaste omstart, omstarter senaste 24 h, appar som kraschat mest, väntande uppdateringar, appar över 30 MB PSS (med ökning sedan dagen innan), ledigt minne, swap och hur stor Homey själv är, ledig lagring, apparna med mest minne i swap (när swap var hög), senaste lyckade säkerhetskopia (⚠ när automatisk säkerhetskopiering är på men ingen lyckats på 7 dygn), firmwarekanal och automatisk uppdatering, återkommande tider samt Sanity Checks eget minne. |
+| **Daglig hälsokontroll** | En gång per dygn, bara det som behöver uppmärksamhet. När inget sticker ut är den en rad: Homey-version, igång sedan, orsak till senaste omstart och "Allt ser normalt ut". Annars får varje fynd ett ⚠: oväntade omstarter eller appkrascher senaste 24 h, en app vars minne växt 10 MB eller mer sedan dagen innan, swap på 64 MB eller mer (med apparna som har mest i swap), lite lagring (under 10 % ledigt), en säkerhetskopia som inte lyckats på 7 dygn fast automatisk säkerhetskopiering är på (sägs en gång, inte varje dag), återkommande tider och Sanity Check själv över 30 MB. Väntande app- eller firmwareuppdateringar, och en annan uppdateringskanal än stable, listas efter fynden. |
 
 ### Omstartsanalys (oplanerade omstarter)
 

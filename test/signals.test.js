@@ -90,18 +90,48 @@ test('swap per app: only when swap is high, at most every 6 hours; top 3 by pssS
   assert.deepEqual(r.top, [{ id: 'a', name: 'Alpha', swap: 4e7 }, { id: 'b', name: 'b', swap: 2e7 }]);
 });
 
-test('daily summary shows storage, swap, backup and firmware lines', () => {
-  const text = dailySummary({
-    homeyVersion: '13.5.2', bootDate: '2026-10-15T18:20:39Z', rebootReason: 'reboot-ota',
-    restarts24h: 1, topCrashers: [], updates: [], memory: null, recurring: [],
-    storage: { free: 1012297728, total: 2657828864, low: false },
-    swapApps: { t: NOW, swap: 232e6, top: [{ id: 'a', name: 'Alpha', swap: 4e7 }] },
+const day = extra => ({
+  homeyVersion: '13.5.2', bootDate: '2026-10-15T18:20:39Z', rebootReason: 'reboot-ota',
+  unplanned24h: 0, topCrashers: [], updates: [], grew: [], recurring: [],
+  sys: { free: 467e6, swap: 2.6e6, core: 348e6 }, self: { pss: 20e6 },
+  storage: { free: 1012297728, total: 2657828864, low: false },
+  backup: { last: Date.parse('2026-10-14T23:46:30Z'), auto: true, days: 1, overdue: false },
+  firmwareCfg: { channel: 'stable', auto: false },
+  ...extra,
+});
+
+test('daily summary: one line when nothing stands out', () => {
+  const text = dailySummary(day(), t, fmt);
+  assert.equal(text.split('\n').length, 1);
+  assert.match(text, /reason=reason_ota\(\)\) daily_ok\(\)$/);
+});
+
+test('daily summary: only findings, each with ⚠, then things to act on', () => {
+  const text = dailySummary(day({
+    unplanned24h: 2,
+    grew: [{ id: 'd', name: 'Device Capabilities', pss: 53e6, change: 12e6 }],
+    sys: { free: 467e6, swap: 74e6, core: 348e6 },
+    swapApps: { t: NOW, swap: 74e6, top: [{ id: 'v', name: 'Virtuella enheter', swap: 4e6 }] },
+    storage: { free: 50e6, total: 2657828864, low: true },
     backup: { last: Date.parse('2026-09-22T23:46:30Z'), auto: true, days: 22, overdue: true },
-    firmwareCfg: { channel: 'stable', auto: true },
-  }, t, fmt);
-  assert.match(text, /reason=reason_ota\(\)/);
-  assert.match(text, /^daily_storage\(free=1\.0 GB,total=2\.7 GB\)$/m);
-  assert.match(text, /^swap_apps\(time=2026-10-15 20:00:00,swap=232 MB,list=Alpha 40 MB\)$/m);
-  assert.match(text, /^⚠ backup_overdue\(date=2026-09-22,n=22\)$/m);
-  assert.match(text, /^daily_firmware\(channel=stable,auto=on\(\)\)$/m);
+    self: { pss: 31e6 },
+    updates: [{ name: 'Aqara', version: '1.16.3', update: '1.18.1' }],
+    firmwareCfg: { channel: 'beta', auto: false },
+  }), t, fmt);
+  const lines = text.split('\n');
+  assert.match(lines[0], /daily_attention\(\)$/);
+  assert.match(lines[1], /^⚠ daily_unplanned\(n=2\)$/);
+  assert.match(lines[2], /^⚠ daily_grew\(list=Device Capabilities \+12 MB \(53 MB\)\)$/);
+  assert.match(lines[3], /^⚠ daily_swap\(swap=74 MB,core=348 MB\) daily_swap_apps\(list=Virtuella enheter 4 MB\)$/);
+  assert.match(lines[4], /^⚠ daily_storage\(free=0\.1 GB,total=2\.7 GB\)$/);
+  assert.match(lines[5], /^⚠ backup_overdue\(date=2026-09-22,n=22\)$/);
+  assert.match(lines[6], /^⚠ daily_self\(pss=31 MB\)$/);
+  assert.match(lines[7], /^daily_updates\(list=Aqara 1\.16\.3→1\.18\.1\)$/);
+  assert.match(lines[8], /^daily_channel\(channel=beta\)$/);
+  assert.equal(lines.length, 9);
+});
+
+test('daily summary: a late backup already reported is not repeated', () => {
+  const backup = { last: Date.parse('2026-09-22T23:46:30Z'), auto: true, days: 22, overdue: true, repeat: true };
+  assert.match(dailySummary(day({ backup }), t, fmt), /daily_ok\(\)$/);
 });

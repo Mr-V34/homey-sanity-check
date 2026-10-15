@@ -4,7 +4,7 @@ const Homey = require('homey');
 const { ReadOnlyApi } = require('./lib/web-api');
 const {
   checkSystem, checkFirmware, checkApps, suspects, DAY,
-  memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
+  memoryGrowth, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
   backupStatus, firmwareSettings, storageStatus, swapDue, swapApps,
 } = require('./lib/checks');
 const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
@@ -319,11 +319,11 @@ class SanityCheckApp extends Homey.App {
       homeyVersion: state.homeyVersion,
       bootDate:     state.bootDate,
       rebootReason: state.rebootReason,
-      restarts24h:  (state.boots || []).filter(b => now - new Date(b.bootDate).getTime() < DAY).length,
+      unplanned24h: (state.boots || []).filter(b => isUnplanned(b) && now - new Date(b.bootDate).getTime() < DAY).length,
       topCrashers:  suspects(apps, now),
       updates:      Object.values(apps).filter(a => a.update).map(a => ({ name: a.name, version: a.version, update: a.update })),
       firmware:     state.firmwareAvailable,
-      memory:       memoryReport(apps, state.pssAtSummary),
+      grew:         memoryGrowth(apps, state.pssAtSummary),
       self:         state.self,
       sys:          state.sys,
       recurring:    [
@@ -333,6 +333,14 @@ class SanityCheckApp extends Homey.App {
       swapApps:     state.swapApps && now - state.swapApps.t < DAY ? state.swapApps : null,
       ...(await this._daily(now)),
     };
+    // A late backup is said once per last backup, not every morning: not
+    // backing up can be the user's own choice.
+    const b = summary.backup;
+    if (b && b.overdue) {
+      const key = String(b.last);
+      b.repeat = this.homey.settings.get('backupWarned') === key;
+      this.homey.settings.set('backupWarned', key);
+    }
     // Snapshot for the "+N MB since yesterday" in the next summary.
     if (!force) this.homey.settings.set('state', { ...state, pssAtSummary: pssSnapshot(apps) });
     const text = dailySummary(summary, (k, tk) => this.homey.__(k, tk), d => this._fmt(d));

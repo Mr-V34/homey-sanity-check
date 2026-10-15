@@ -1,0 +1,107 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const {
+  checkSystem, hwFlags, optionValue, backupStatus, firmwareSettings, storageStatus, swapDue, swapApps, DAY,
+} = require('../lib/checks');
+const { verdict } = require('../lib/verdict');
+const { eventText, dailySummary, backupLine } = require('../lib/report');
+
+const t = (k, tk = {}) => `${k.split('.').pop()}(${Object.entries(tk).map(([a, b]) => `${a}=${b}`).join(',')})`;
+const fmt = d => new Date(d).toISOString().replace('T', ' ').slice(0, 19);
+const NOW = Date.parse('2026-10-15T20:00:00Z');
+
+// getInfo as seen on Homey 13.5.2 (2026-10-15), all flags false.
+const info = (extra = {}) => ({
+  bootId: 'b1', bootDate: '2026-10-15T18:20:39.026Z', rebootReason: 'reboot-ota', homeyVersion: '13.5.2',
+  videoCoreUndervoltageOccured: false, videoCoreThrottleOccured: false,
+  videoCoreSoftTemperatureLimitActiveOccured: false, videoCoreArmFrequencyCappedOccured: false,
+  ...extra,
+});
+
+test('hw flags: read from getInfo, reported once per boot when they turn on', () => {
+  assert.deepEqual(hwFlags(info()), { undervoltage: false, throttled: false, softTempLimit: false, freqCapped: false });
+  const quiet = checkSystem(info(), { bootId: 'b1', hw: hwFlags(info()) }, NOW);
+  assert.equal(quiet.events.length, 0);
+  const on = checkSystem(info({ videoCoreUndervoltageOccured: true }), { bootId: 'b1', hw: hwFlags(info()) }, NOW);
+  assert.deepEqual(on.events, [{ type: 'hw_flag', flag: 'undervoltage' }]);
+  const again = checkSystem(info({ videoCoreUndervoltageOccured: true }), { bootId: 'b1', hw: on.state.hw }, NOW);
+  assert.equal(again.events.length, 0);
+  // After a reboot the flag counts as new again.
+  const next = checkSystem(info({ bootId: 'b2', videoCoreUndervoltageOccured: true }), { bootId: 'b1', hw: on.state.hw }, NOW);
+  assert.ok(next.events.some(e => e.type === 'hw_flag' && e.flag === 'undervoltage'));
+  assert.deepEqual(next.events.find(e => e.type === 'homey_restarted').before.hw, on.state.hw);
+  assert.match(eventText({ type: 'hw_flag', flag: 'undervoltage' }, t, fmt), /^hw_undervoltage/);
+});
+
+test('hw flags in the verdict: undervoltage → power, throttling without undervoltage → heat', () => {
+  const restart = hw => ({
+    type: 'homey_restarted', rebootReason: 'unexpected', suspects: [], before: { hw },
+    postmortem: { checked: 30, findings: [], signals: { power: { max: 0, bad: false }, heat: { max: 57, normal: 57, bad: false }, load: { avg: 9, normal: 9, bad: false } } },
+  });
+  assert.equal(verdict(restart({ undervoltage: true, throttled: true })).cause, 'power');
+  assert.equal(verdict(restart({ throttled: true })).cause, 'heat');
+  assert.equal(verdict(restart({ softTempLimit: true })).cause, 'heat');
+  assert.equal(verdict(restart({})).cause, 'homey');
+  // No Insights at all, but the flag still counts.
+  const noSig = { type: 'homey_restarted', rebootReason: 'unexpected', suspects: [], before: { hw: { undervoltage: true } }, postmortem: { checked: 30, findings: [] } };
+  assert.equal(verdict(noSig).cause, 'power');
+  const text = eventText({ ...restart({ throttled: true }), bootDate: '2026-10-15T18:20:39Z' }, t, fmt);
+  assert.match(text, /⚠ v_heat_flag/);
+});
+
+test('backup: overdue when automatic backups are on and the last one is a week old', () => {
+  const sep22 = 'Tue Sep 22 2026 23:46:30 GMT+0000 (Coordinated Universal Time)'; // as seen 2026-10-15
+  const b = backupStatus({ value: sep22 }, { value: true }, NOW);
+  assert.equal(b.days, 22);
+  assert.equal(b.overdue, true);
+  assert.equal(backupStatus(sep22, true, NOW).overdue, true); // bare values work too
+  assert.equal(backupStatus({ value: sep22 }, { value: false }, NOW).overdue, false);
+  assert.equal(backupStatus({ value: new Date(NOW - 2 * DAY).toISOString() }, { value: true }, NOW).overdue, false);
+  assert.equal(backupStatus({ value: null }, { value: true }, NOW).overdue, true);
+  assert.equal(backupStatus(null, null, NOW), null);
+  assert.match(backupLine(b, t, fmt), /^backup_overdue\(date=2026-09-22,n=22\)/);
+  assert.match(backupLine(backupStatus(null, true, NOW), t, fmt), /^backup_none/);
+});
+
+test('firmware settings, storage and option values', () => {
+  assert.equal(optionValue({ value: 'stable' }), 'stable');
+  assert.equal(optionValue('stable'), 'stable');
+  assert.deepEqual(firmwareSettings({ value: 'stable' }, { value: true }), { channel: 'stable', auto: true });
+  assert.equal(firmwareSettings(null, null), null);
+  assert.deepEqual(storageStatus({ total: 2657828864, free: 1012297728 }), { free: 1012297728, total: 2657828864, low: false });
+  assert.equal(storageStatus({ total: 1000, free: 50 }).low, true);
+  assert.equal(storageStatus(null), null);
+});
+
+test('swap per app: only when swap is high, at most every 6 hours; top 3 by pssSwap', () => {
+  assert.equal(swapDue({ swap: 2.6e6 }, null, NOW), false);
+  assert.equal(swapDue({ swap: 232e6 }, null, NOW), true);
+  assert.equal(swapDue({ swap: 232e6 }, { t: NOW - 3600e3 }, NOW), false);
+  assert.equal(swapDue({ swap: 232e6 }, { t: NOW - 7 * 3600e3 }, NOW), true);
+  const usage = {
+    a: { mem: { pss: 5e7, pssSwap: 4e7 } },
+    b: { usage: { mem: { pssSwap: 2e7 } } }, // wrapped answer works too
+    c: { mem: { pssSwap: 0 } },
+    d: null,
+  };
+  const r = swapApps(usage, { a: { name: 'Alpha' } }, 232e6, NOW);
+  assert.deepEqual(r.top, [{ id: 'a', name: 'Alpha', swap: 4e7 }, { id: 'b', name: 'b', swap: 2e7 }]);
+});
+
+test('daily summary shows storage, swap, backup and firmware lines', () => {
+  const text = dailySummary({
+    homeyVersion: '13.5.2', bootDate: '2026-10-15T18:20:39Z', rebootReason: 'reboot-ota',
+    restarts24h: 1, topCrashers: [], updates: [], memory: null, recurring: [],
+    storage: { free: 1012297728, total: 2657828864, low: false },
+    swapApps: { t: NOW, swap: 232e6, top: [{ id: 'a', name: 'Alpha', swap: 4e7 }] },
+    backup: { last: Date.parse('2026-09-22T23:46:30Z'), auto: true, days: 22, overdue: true },
+    firmwareCfg: { channel: 'stable', auto: true },
+  }, t, fmt);
+  assert.match(text, /reason=reason_ota\(\)/);
+  assert.match(text, /^daily_storage\(free=1\.0 GB,total=2\.7 GB\)$/m);
+  assert.match(text, /^swap_apps\(time=2026-10-15 20:00:00,swap=232 MB,list=Alpha 40 MB\)$/m);
+  assert.match(text, /^⚠ backup_overdue\(date=2026-09-22,n=22\)$/m);
+  assert.match(text, /^daily_firmware\(channel=stable,auto=on\(\)\)$/m);
+});

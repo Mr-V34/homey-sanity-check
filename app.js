@@ -5,6 +5,7 @@ const { ReadOnlyApi } = require('./lib/web-api');
 const {
   checkSystem, checkFirmware, checkApps, suspects, DAY,
   memoryReport, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
+  backupStatus, firmwareSettings, storageStatus, swapDue, swapApps,
 } = require('./lib/checks');
 const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
 const { BASE, analyzeSignals } = require('./lib/verdict');
@@ -21,6 +22,9 @@ const OBSOLETE_SETTINGS = ['thresholds', 'silentReport'];
 // Read-only: every Web API call below is a GET with a *.readonly scope.
 // One full check per hour (4 GET calls: system, memory, apps, updates), no
 // realtime subscriptions, small state in homey.settings, no growing logs.
+// Once a day, for the summary: backup, firmware channel and storage (5 calls).
+// When swap is high, at most every 6 hours: memory per running app (1 call
+// per app) to see whose memory is in swap.
 // After an unplanned Homey restart, once: 2 Insights reads per app (RAM, CPU),
 // Sanity Check itself included, plus system memory, undervoltage, CPU
 // temperature and load, for the 30 minutes before the restart, and the Flows
@@ -96,6 +100,7 @@ class SanityCheckApp extends Homey.App {
         events.push(...r.events);
         const me = apps[selfId];
         next.self = { pss: pssById[selfId] ?? null, rss: me && me.usage ? me.usage.mem : null };
+        if (swapDue(next.sys, prev.swapApps, now)) next.swapApps = await this._swapApps(next, now);
       }
 
       const updates = await this._get('updates.getUpdates', () => this._api.getUpdates());
@@ -213,6 +218,35 @@ class SanityCheckApp extends Homey.App {
     return out;
   }
 
+  // getAppUsage for every running app, one after the other.
+  async _swapApps(state, now) {
+    const usage = {};
+    for (const [id, a] of Object.entries(state.apps || {})) {
+      if (a.state !== 'running') continue;
+      usage[id] = await this._api.getAppUsage(id).catch(() => null);
+    }
+    const r = swapApps(usage, state.apps, state.sys.swap, now);
+    this.log(`Swap ${Math.round(state.sys.swap / 1e6)} MB: read ${Object.keys(usage).length} app(s), top ${r.top.map(x => `${x.id} ${Math.round(x.swap / 1e6)} MB`).join(', ') || 'none ≥ 1 MB'}`);
+    return r;
+  }
+
+  // Backup, firmware channel and storage for the daily summary.
+  async _daily(now) {
+    const get = (label, fn) => this._get(label, fn);
+    const backup = backupStatus(
+      await get('backup.lastSuccessfulBackup', () => this._api.getBackupLast()),
+      await get('backup.automaticBackupsEnabled', () => this._api.getBackupAuto()),
+      now,
+    );
+    const firmwareCfg = firmwareSettings(
+      await get('updates.channel', () => this._api.getUpdateChannel()),
+      await get('updates.autoupdate', () => this._api.getUpdateAuto()),
+    );
+    const storage = storageStatus(await get('system.getStorageInfo', () => this._api.getStorageInfo()));
+    this.log(`Daily: backup ${backup ? `${backup.days} d, auto ${backup.auto}` : '?'}, channel ${firmwareCfg ? `${firmwareCfg.channel}, auto ${firmwareCfg.auto}` : '?'}, storage ${storage ? `${Math.round(storage.free / 1e6)} MB free` : '?'}`);
+    return { backup, firmwareCfg, storage };
+  }
+
   // Exact crash minutes from the app's RAM in Insights: lastHour (5 s steps)
   // for the newest part, last6Hours (1 min) for the rest. A crash shows as RAM
   // falling to 0 (verified 2026-10-14 with the crash probe, FINDINGS 1.19).
@@ -296,6 +330,8 @@ class SanityCheckApp extends Homey.App {
         ...recurringTimes(state.history, 'boot', t => this._local(t)),
         ...recurringTimes(state.history, 'crash', t => this._local(t)),
       ],
+      swapApps:     state.swapApps && now - state.swapApps.t < DAY ? state.swapApps : null,
+      ...(await this._daily(now)),
     };
     // Snapshot for the "+N MB since yesterday" in the next summary.
     if (!force) this.homey.settings.set('state', { ...state, pssAtSummary: pssSnapshot(apps) });

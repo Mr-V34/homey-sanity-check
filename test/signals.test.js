@@ -122,12 +122,12 @@ test('daily summary: only findings, each with ⚠, then things to act on', () =>
   assert.match(lines[0], /daily_attention\(\)$/);
   // Every finding ends with advice (the backup text carries its own).
   assert.match(lines[1], /^⚠ daily_unplanned\(n=2\) adv_unplanned\(\)$/);
-  assert.match(lines[2], /^⚠ daily_grew\(list=Device Capabilities \+12 MB \(53 MB\)\) adv_grew\(\)$/);
+  assert.match(lines[2], /^⚠ daily_grew\(list=grew_item\(name=Device Capabilities,change=12 MB,pss=53 MB\)\) adv_grew\(\)$/);
   assert.match(lines[3], /^⚠ daily_swap_app\(list=Virtuella enheter 40 MB\) adv_swap\(\)$/); // Shelly 3 MB is below the bar
   assert.match(lines[4], /^⚠ daily_storage\(free=0\.1 GB,total=2\.7 GB\) adv_storage\(\)$/);
   assert.match(lines[5], /^⚠ backup_overdue\(date=2026-09-22,n=22\)$/);
   assert.match(lines[6], /^⚠ daily_self\(pss=31 MB\) adv_self\(\)$/);
-  assert.match(lines[7], /^daily_updates\(list=Aqara 1\.16\.3→1\.18\.1\)$/);
+  assert.match(lines[7], /^daily_updates\(list=update_item\(name=Aqara,from=1\.16\.3,to=1\.18\.1\)\)$/);
   assert.match(lines[8], /^daily_channel\(channel=beta\)$/);
   assert.equal(lines.length, 9);
 });
@@ -151,7 +151,7 @@ test('daily summary, detailed: same head and findings, then everything measured'
     'swap_apps', 'daily_storage', 'backup_ok', 'daily_firmware', 'daily_self',
   ]);
   assert.match(lines[2], /n=1,unplanned=0/);
-  assert.match(lines[4], /Device Capabilities 53 MB \(\+6 MB\), Roborock Cloud 50 MB \(−8 MB\)/);
+  assert.match(lines[4], /largest_more\(name=Device Capabilities,pss=53 MB,change=6 MB\); largest_less\(name=Roborock Cloud,pss=50 MB,change=8 MB\)/);
   assert.match(lines[9], /channel=stable,auto=off\(\)/);
 });
 
@@ -172,6 +172,49 @@ test('daily summary: crashes and recurring times get their advice', () => {
     topCrashers: [{ id: 'x', name: 'X', version: '1.0', crashes: 3 }],
     recurring: [{ kind: 'boot', n: 2, from: 180, to: 190, names: [] }],
   }), t, fmt);
-  assert.match(text, /^⚠ daily_crashes\(list=X v1\.0 \(3×\)\) adv_crashes\(\)$/m);
+  assert.match(text, /^⚠ daily_crashes\(list=crash_item\(app=X v1\.0,n=3\)\) adv_crashes\(\)$/m);
   assert.match(text, /^⚠ recurring_boot\(n=2,time=03:00–03:10,apps=\) adv_recurring\(\)$/m);
+});
+
+test('daily summary: an app with a problem and a newer version gets update advice first', () => {
+  const lines = dailySummary(day({
+    unplanned24h: 1,
+    topCrashers: [{ id: 'x', name: 'X', version: '1.0', crashes: 3 }],
+    grew: [
+      { id: 'a', name: 'Alpha', pss: 60e6, change: 20e6 },
+      { id: 'n', name: 'Netatmo', pss: 54e6, change: 12e6 },
+    ],
+    updates: [
+      { id: 'n', name: 'Netatmo', version: '5.8.7', update: '5.8.8', auto: false },
+      { id: 'q', name: 'Aqara', version: '1.16.3', update: '1.18.1', auto: false },
+      { id: 'z', name: 'Zeta', version: '2.0', update: '2.1', auto: true },
+    ],
+  }), t, fmt).split('\n');
+  assert.match(lines[1], /^⚠ daily_unplanned/); // unexpected restarts stay on top
+  // Netatmo moves up: first in its list, and its finding before the crash line.
+  assert.equal(lines[2], '⚠ daily_grew(list=grew_item(name=Netatmo,change=12 MB,pss=54 MB); '
+    + 'grew_item(name=Alpha,change=20 MB,pss=60 MB)) adv_update(list=Netatmo 5.8.8) adv_auto_off(list=Netatmo) adv_grew()');
+  assert.match(lines[3], /^⚠ daily_crashes\(.*\) adv_crashes\(\)$/); // no update for X: no update advice
+  // Netatmo was advised above; the others stay an info line, manual ones marked.
+  assert.equal(lines[4], 'daily_updates(list=update_manual(name=Aqara,from=1.16.3,to=1.18.1), '
+    + 'update_item(name=Zeta,from=2.0,to=2.1))');
+  assert.equal(lines.length, 5);
+  // The update is named once, in the advice, not also in the crash list.
+  const crash = dailySummary(day({
+    topCrashers: [{ id: 'n', name: 'Netatmo', version: '5.8.7', crashes: 2, update: '5.8.8' }],
+    updates: [{ id: 'n', name: 'Netatmo', version: '5.8.7', update: '5.8.8', auto: true }],
+  }), t, fmt);
+  assert.match(crash, /^⚠ daily_crashes\(list=crash_item\(app=Netatmo v5\.8\.7,n=2\)\) adv_update\(list=Netatmo 5\.8\.8\) adv_crashes\(\)$/m);
+  // One crash reads "once", not "1 times".
+  const one = dailySummary(day({ topCrashers: [{ id: 'x', name: 'X', version: '1.0', crashes: 1 }] }), t, fmt);
+  assert.match(one, /daily_crashes\(list=crash_once\(app=X v1\.0,n=1\)\)/);
+});
+
+test('daily summary: automatic updates on → no note about manual updates', () => {
+  const text = dailySummary(day({
+    grew: [{ id: 'n', name: 'Netatmo', pss: 54e6, change: 12e6 }],
+    updates: [{ id: 'n', name: 'Netatmo', version: '5.8.7', update: '5.8.8', auto: true }],
+  }), t, fmt);
+  assert.match(text, /adv_update\(list=Netatmo 5\.8\.8\) adv_grew\(\)$/m);
+  assert.doesNotMatch(text, /adv_auto_off|daily_updates/);
 });

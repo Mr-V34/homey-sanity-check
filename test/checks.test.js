@@ -144,7 +144,7 @@ test('report: restart text names the suspect as a possibility, with update', () 
   }, t, () => '22:24:48');
   assert.match(text, /report\.homey_restarted/);
   assert.match(text, /report\.suspects/);
-  assert.match(text, /Tuya v0\.3\.4 \(34×, 0\.3\.5/);
+  assert.match(text, /report\.crash_item.*Tuya v0\.3\.4.*34.*report\.crash_update.*0\.3\.5/);
 });
 
 test('report: durations', () => {
@@ -212,4 +212,14 @@ test('report: crash text adds memory and the "stopped by Homey" hint', () => {
   const text = eventText({ type: 'app_crashed', name: 'X', version: '1', delta: 3, last24h: 3, pss: 120e6, noMessage: true }, t, () => '');
   assert.match(text, /report\.memory_before\{"pss":"120 MB"\}/);
   assert.match(text, /report\.killed_hint/);
+});
+
+test('apps: autoupdate is kept as true/false, anything else as unknown', () => {
+  const apps = [
+    { id: 'on', name: 'On', version: '1', autoupdate: true },
+    { id: 'off', name: 'Off', version: '1', autoupdate: false },
+    { id: 'old', name: 'Old', version: '1' },
+  ];
+  const { state } = checkApps(apps, {}, T0);
+  assert.deepEqual([state.apps.on.auto, state.apps.off.auto, state.apps.old.auto], [true, false, null]);
 });

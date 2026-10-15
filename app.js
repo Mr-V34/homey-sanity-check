@@ -324,7 +324,8 @@ class SanityCheckApp extends Homey.App {
       restarts24h:  (state.boots || []).filter(b => now - new Date(b.bootDate).getTime() < DAY).length,
       unplanned24h: (state.boots || []).filter(b => isUnplanned(b) && now - new Date(b.bootDate).getTime() < DAY).length,
       topCrashers:  suspects(apps, now),
-      updates:      Object.values(apps).filter(a => a.update).map(a => ({ name: a.name, version: a.version, update: a.update })),
+      updates:      Object.entries(apps).filter(([, a]) => a.update)
+        .map(([id, a]) => ({ id, name: a.name, version: a.version, update: a.update, auto: a.auto })),
       firmware:     state.firmwareAvailable,
       grew:         memoryGrowth(apps, state.pssAtSummary),
       largest:      largestApps(apps, state.pssAtSummary),

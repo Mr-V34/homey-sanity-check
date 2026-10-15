@@ -9,7 +9,7 @@ const {
 const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
 const { BASE, analyzeSignals } = require('./lib/verdict');
 const {
-  crashMinutes, scheduledNear, addHistory, recurringTimes, crashesBeforeBoots,
+  crashMinutes, scheduledNear, addHistory, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
 const { DEFAULT_SUMMARY_HOUR, CHECK_INTERVAL, FIRST_CHECK_DELAY } = require('./lib/constants');
@@ -123,7 +123,9 @@ class SanityCheckApp extends Homey.App {
         const boot = (next.boots || []).find(b => b.bootDate === e.bootDate);
         if (boot) Object.assign(boot, { postmortem: e.postmortem, scheduled: e.scheduled });
       }
-      next.history = addHistory(prev.history, seen, now);
+      const plannedAt = (next.boots || []).filter(b => !isUnplanned(b))
+        .flatMap(b => [new Date(b.bootDate).getTime(), b.postmortem && b.postmortem.quietAt]);
+      next.history = addHistory(dropPlannedBoots(prev.history, plannedAt), seen, now);
       for (const e of events) {
         if (e.type !== 'homey_restarted' || !isUnplanned(e)) continue;
         e.recurring = recurringTimes(next.history, 'boot', t => this._local(t));

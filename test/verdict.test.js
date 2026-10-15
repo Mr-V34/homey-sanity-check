@@ -102,3 +102,18 @@ test('report: a planned reboot gets no verdict', () => {
   const text = eventText(restart({ signals: analyzeSignals(calm, BOOT, QUIET) }, { rebootReason: 'reboot' }), t, fmt);
   assert.doesNotMatch(text, /v_cause/);
 });
+
+test('report: a firmware update (reboot-ota) gets no verdict and a readable reason', () => {
+  const text = eventText(restart({ signals: analyzeSignals(calm, BOOT, QUIET) }, { rebootReason: 'reboot-ota' }), t, fmt);
+  assert.match(text, /reason=reason_ota\(\)/);
+  assert.doesNotMatch(text, /v_cause|v_advice|last_check/);
+});
+
+test('report: support advice only for "unexpected"; an unknown reason gets the cautious advice', () => {
+  const sig = { signals: analyzeSignals(calm, BOOT, QUIET) };
+  assert.match(eventText(restart(sig), t, fmt), /v_advice_homey\(/);
+  const text = eventText(restart(sig, { rebootReason: 'something-new' }), t, fmt);
+  assert.match(text, /v_cause_homey/); // still analysed
+  assert.match(text, /v_advice_homey_reason\(app=,reason=something-new\)/);
+  assert.match(text, /reason=something-new,/); // unknown value shown as it is
+});

@@ -1,6 +1,9 @@
 {
   "report": {
     "unknown": "okänd",
+    "reason_reboot": "begärd omstart, planerad",
+    "reason_ota": "firmwareuppdatering, planerad",
+    "reason_unexpected": "oväntad",
     "minutes": "__n__ min",
     "hours": "__n__ h",
     "days": "__n__ dygn",
@@ -77,6 +80,7 @@
     "v_advice_heat": "Råd: ge Homey fri luft runt sig, borta från sol och värmekällor.",
     "v_advice_load": "Råd: se över tunga Flows och appar som körde strax innan.",
     "v_advice_homey": "Råd: skapa en diagnosrapport i Homey-appen (Inställningar → Allmänt) och kontakta Athom support med tiden ovan.",
+    "v_advice_homey_reason": "Råd: Homey angav orsaken \"__reason__\", som Sanity Check inte känner till. Kontrollera om Homey uppdaterades eller startades om av någon innan du kontaktar Athom support.",
     "v_advice_unknown": "Råd: vänta på nästa omstart, den ger en bättre bild.",
     "v_details": "Detaljer:"
   },

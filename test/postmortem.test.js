@@ -86,6 +86,9 @@ test('system: boot record keeps the last check, system memory and top PSS from b
 test('system: planned reboot is not unplanned; systemMemory tolerates failed calls', () => {
   assert.equal(isUnplanned({ rebootReason: 'reboot' }), false);
   assert.equal(isUnplanned({ rebootReason: 'unexpected' }), true);
+  assert.equal(isUnplanned({ rebootReason: 'reboot-ota' }), false); // firmware update, 2026-10-15
+  assert.equal(isUnplanned({ rebootReason: 'something-new' }), true); // unknown: still analysed
+  assert.equal(isUnplanned({ rebootReason: null }), true);
   assert.deepEqual(systemMemory(null, null), { free: null, swap: null, core: null, procs: {} });
   assert.deepEqual(
     systemMemory({ freemem: 4 }, { swap: 2, types: { homey: { name: 'Homey', size: 3 }, 'homey:app:x': { size: 9 } } }),

@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  crashMinutes, timeTriggers, scheduledNear, addHistory, recurringTimes, crashesBeforeBoots,
+  crashMinutes, timeTriggers, scheduledNear, addHistory, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
 } = require('../lib/patterns');
 const { eventText } = require('../lib/report');
 
@@ -116,4 +116,17 @@ test('report: restart lists scheduled Flows, recurring time and crash link', () 
 test('report: crash with Insights times', () => {
   const text = eventText({ type: 'app_crashed', name: 'X', version: '1', delta: 2, last24h: 2, times: [at('09:25:10'), at('09:25:35')] }, t, fmt);
   assert.match(text, /crash_times\(list=09:25:10, 09:25:35\)/);
+});
+
+test('history: boots at planned times are dropped, crashes and other boots stay', () => {
+  const ota = Date.parse('2026-10-15T18:20:39.026Z'); // the real entry from 2026-10-15
+  const h = [
+    { kind: 'crash', t: ota, id: 'x' },
+    { kind: 'boot', t: 1791982560000 },
+    { kind: 'boot', t: ota },
+    { kind: 'boot', t: 1000 }, // went quiet at 1000
+  ];
+  assert.deepEqual(dropPlannedBoots(h, [ota, null, 1000]), h.slice(0, 2));
+  assert.deepEqual(dropPlannedBoots(undefined, [ota]), []);
+  assert.deepEqual(dropPlannedBoots(h, []), h);
 });

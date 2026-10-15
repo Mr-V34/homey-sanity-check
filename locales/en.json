@@ -1,6 +1,9 @@
 {
   "report": {
     "unknown": "unknown",
+    "reason_reboot": "requested restart, planned",
+    "reason_ota": "firmware update, planned",
+    "reason_unexpected": "unexpected",
     "minutes": "__n__ min",
     "hours": "__n__ h",
     "days": "__n__ days",
@@ -77,6 +80,7 @@
     "v_advice_heat": "Advice: give Homey free air around it, away from sun and heat sources.",
     "v_advice_load": "Advice: look at heavy Flows and apps that ran just before.",
     "v_advice_homey": "Advice: create a diagnostics report in the Homey app (Settings → General) and contact Athom support with the time above.",
+    "v_advice_homey_reason": "Advice: Homey gave the reason \"__reason__\", which Sanity Check doesn't know. Check whether Homey was updated or restarted by someone before you contact Athom support.",
     "v_advice_unknown": "Advice: wait for the next restart; it gives a better picture.",
     "v_details": "Details:"
   },

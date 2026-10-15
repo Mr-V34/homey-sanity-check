@@ -95,8 +95,6 @@
     "daily_unplanned": "__n__ oväntad(e) omstart(er) senaste 24 h.",
     "daily_crashes": "Appkrascher senaste 24 h: __list__.",
     "daily_grew": "Minnet växte sedan i går: __list__.",
-    "daily_swap": "Swap __swap__ (Homey själv __core__).",
-    "daily_swap_apps": "Mest i swap: __list__.",
     "daily_channel": "Homey följer uppdateringskanalen __channel__.",
     "daily_restarts": "Omstarter senaste 24 h: __n__, varav __unplanned__ oväntade.",
     "daily_no_crashes": "Inga appkrascher senaste 24 h.",
@@ -104,7 +102,15 @@
     "daily_system": "Homey: ledigt minne __free__, swap __swap__, Homey själv __core__.",
     "daily_firmware": "Firmware: kanal __channel__, automatisk uppdatering __auto__.",
     "on": "på",
-    "off": "av"
+    "off": "av",
+    "daily_swap_app": "Mycket av en apps minne ligger i swap: __list__.",
+    "adv_unplanned": "Se omstartsrapporten i tidslinjen för trolig orsak.",
+    "adv_crashes": "Uppdatera eller starta om appen. Kraschar den igen, meddela utvecklaren.",
+    "adv_grew": "Växer den flera dagar i rad kan det vara en minnesläcka: starta om appen och meddela utvecklaren.",
+    "adv_swap": "Starta om appen för att frigöra minnet. Händer det ofta, meddela utvecklaren.",
+    "adv_storage": "Ta bort appar du inte använder.",
+    "adv_recurring": "Kolla Flows och appar som körs vid den tiden.",
+    "adv_self": "Starta om Sanity Check och rapportera det via appens sida i App Store."
   },
   "settings": {
     "title": "Sanity Check",

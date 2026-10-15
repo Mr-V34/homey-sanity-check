@@ -111,7 +111,7 @@ test('daily summary: only findings, each with ⚠, then things to act on', () =>
     unplanned24h: 2,
     grew: [{ id: 'd', name: 'Device Capabilities', pss: 53e6, change: 12e6 }],
     sys: { free: 467e6, swap: 74e6, core: 348e6 },
-    swapApps: { t: NOW, swap: 74e6, top: [{ id: 'v', name: 'Virtuella enheter', swap: 4e6 }] },
+    swapApps: { t: NOW, swap: 180e6, top: [{ id: 'v', name: 'Virtuella enheter', swap: 40e6 }, { id: 's', name: 'Shelly', swap: 3e6 }] },
     storage: { free: 50e6, total: 2657828864, low: true },
     backup: { last: Date.parse('2026-09-22T23:46:30Z'), auto: true, days: 22, overdue: true },
     self: { pss: 31e6 },
@@ -120,12 +120,13 @@ test('daily summary: only findings, each with ⚠, then things to act on', () =>
   }), t, fmt);
   const lines = text.split('\n');
   assert.match(lines[0], /daily_attention\(\)$/);
-  assert.match(lines[1], /^⚠ daily_unplanned\(n=2\)$/);
-  assert.match(lines[2], /^⚠ daily_grew\(list=Device Capabilities \+12 MB \(53 MB\)\)$/);
-  assert.match(lines[3], /^⚠ daily_swap\(swap=74 MB,core=348 MB\) daily_swap_apps\(list=Virtuella enheter 4 MB\)$/);
-  assert.match(lines[4], /^⚠ daily_storage\(free=0\.1 GB,total=2\.7 GB\)$/);
+  // Every finding ends with advice (the backup text carries its own).
+  assert.match(lines[1], /^⚠ daily_unplanned\(n=2\) adv_unplanned\(\)$/);
+  assert.match(lines[2], /^⚠ daily_grew\(list=Device Capabilities \+12 MB \(53 MB\)\) adv_grew\(\)$/);
+  assert.match(lines[3], /^⚠ daily_swap_app\(list=Virtuella enheter 40 MB\) adv_swap\(\)$/); // Shelly 3 MB is below the bar
+  assert.match(lines[4], /^⚠ daily_storage\(free=0\.1 GB,total=2\.7 GB\) adv_storage\(\)$/);
   assert.match(lines[5], /^⚠ backup_overdue\(date=2026-09-22,n=22\)$/);
-  assert.match(lines[6], /^⚠ daily_self\(pss=31 MB\)$/);
+  assert.match(lines[6], /^⚠ daily_self\(pss=31 MB\) adv_self\(\)$/);
   assert.match(lines[7], /^daily_updates\(list=Aqara 1\.16\.3→1\.18\.1\)$/);
   assert.match(lines[8], /^daily_channel\(channel=beta\)$/);
   assert.equal(lines.length, 9);
@@ -152,4 +153,25 @@ test('daily summary, detailed: same head and findings, then everything measured'
   assert.match(lines[2], /n=1,unplanned=0/);
   assert.match(lines[4], /Device Capabilities 53 MB \(\+6 MB\), Roborock Cloud 50 MB \(−8 MB\)/);
   assert.match(lines[9], /channel=stable,auto=off\(\)/);
+});
+
+test('daily summary: high total swap alone is no finding (2026-10-15: 74 MB, apps 8 MB)', () => {
+  const text = dailySummary(day({
+    sys: { free: 400e6, swap: 74e6, core: 348e6 },
+    swapApps: { t: NOW, swap: 74448896, top: [
+      { id: 'v', name: 'Virtuella enheter', swap: 4022272 }, { id: 's', name: 'Shelly (Legacy)', swap: 2871296 },
+      { id: 'r', name: 'Roborock Cloud', swap: 1548288 },
+    ] },
+  }), t, fmt);
+  assert.match(text, /daily_ok\(\)$/);
+  assert.equal(text.split('\n').length, 1);
+});
+
+test('daily summary: crashes and recurring times get their advice', () => {
+  const text = dailySummary(day({
+    topCrashers: [{ id: 'x', name: 'X', version: '1.0', crashes: 3 }],
+    recurring: [{ kind: 'boot', n: 2, from: 180, to: 190, names: [] }],
+  }), t, fmt);
+  assert.match(text, /^⚠ daily_crashes\(list=X v1\.0 \(3×\)\) adv_crashes\(\)$/m);
+  assert.match(text, /^⚠ recurring_boot\(n=2,time=03:00–03:10,apps=\) adv_recurring\(\)$/m);
 });

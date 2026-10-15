@@ -95,8 +95,6 @@
     "daily_unplanned": "__n__ unexpected restart(s) in the last 24 h.",
     "daily_crashes": "App crashes in the last 24 h: __list__.",
     "daily_grew": "Memory grew since yesterday: __list__.",
-    "daily_swap": "Swap __swap__ (Homey itself __core__).",
-    "daily_swap_apps": "Most in swap: __list__.",
     "daily_channel": "Homey follows the __channel__ update channel.",
     "daily_restarts": "Restarts in the last 24 h: __n__, of which __unplanned__ unexpected.",
     "daily_no_crashes": "No app crashes in the last 24 h.",
@@ -104,7 +102,15 @@
     "daily_system": "Homey: free memory __free__, swap __swap__, Homey itself __core__.",
     "daily_firmware": "Firmware: channel __channel__, automatic updates __auto__.",
     "on": "on",
-    "off": "off"
+    "off": "off",
+    "daily_swap_app": "Much of an app's memory is in swap: __list__.",
+    "adv_unplanned": "See the restart report on the timeline for the likely cause.",
+    "adv_crashes": "Update or restart the app. If it crashes again, tell its developer.",
+    "adv_grew": "If it keeps growing several days in a row it may be a memory leak: restart the app and tell its developer.",
+    "adv_swap": "Restart the app to free that memory. If it happens often, tell its developer.",
+    "adv_storage": "Remove apps you don't use.",
+    "adv_recurring": "Check the Flows and apps that run at that time.",
+    "adv_self": "Restart Sanity Check and report it on its App Store page."
   },
   "settings": {
     "title": "Sanity Check",

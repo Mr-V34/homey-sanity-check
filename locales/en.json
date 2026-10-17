@@ -120,7 +120,18 @@
     "update_item": "__name__ __from__→__to__",
     "update_manual": "__name__ __from__→__to__ (automatic updates off)",
     "adv_update": "A newer version is available: __list__. Try updating first, it often helps.",
-    "adv_auto_off": "Automatic updates are off for __list__. If you chose that on purpose, update by hand when it suits you."
+    "adv_auto_off": "Automatic updates are off for __list__. If you chose that on purpose, update by hand when it suits you.",
+    "change_app_removed": "__name__ uninstalled",
+    "change_app_added": "__name__ installed",
+    "change_app_disabled": "__name__ turned off",
+    "change_app_enabled": "__name__ turned on again",
+    "change_app_version": "__name__ updated to __to__",
+    "change_firmware": "Homey updated to __to__",
+    "change_more": "and __n__ more",
+    "link_stopped": "No unexpected restarts for __quiet__ (before that: __n__ in __span__). Changed since the last one: __list__. One of these most likely helped.",
+    "adv_link_stopped": "If you want to know which: undo them one at a time, a few days apart.",
+    "link_started": "Unexpected restarts started __when__: __n__ in the last 7 days, none in the 14 days before. Changed in the week before: __list__.",
+    "adv_link_started": "Turn off or remove what changed, one at a time, latest first. For an app update: look for a newer version or tell its developer."
   },
   "settings": {
     "title": "Sanity Check",

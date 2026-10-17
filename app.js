@@ -11,6 +11,7 @@ const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmort
 const { BASE, analyzeSignals } = require('./lib/verdict');
 const {
   crashMinutes, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
+  changeLink,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
 const {
@@ -77,6 +78,7 @@ class SanityCheckApp extends Homey.App {
       delete next.silent; // silent-device list, removed in 0.5.0
       const events = [];
       const firstRun = !prev.bootId; // baseline only: show a summary so the user sees it works
+      next.since = prev.since || now; // when watching began, for changeLink
 
       const info = await this._get('system.getInfo', () => this._api.getInfo());
       if (info) {
@@ -336,8 +338,16 @@ class SanityCheckApp extends Homey.App {
         ...recurringTimes(state.history, 'crash', t => this._local(t)),
       ],
       swapApps:     state.swapApps && now - state.swapApps.t < DAY ? state.swapApps : null,
+      link:         changeLink(state.history, now, state.since),
       ...(await this._daily(now)),
     };
+    // "Restarts stopped" is said once per quiet spell (keyed by the last restart).
+    const l = summary.link;
+    if (l && l.kind === 'stopped') {
+      const key = String(l.last);
+      l.said = this.homey.settings.get('linkSaid') === key;
+      if (!force) this.homey.settings.set('linkSaid', key);
+    }
     // A late backup is said once per last backup, not every morning: not
     // backing up can be the user's own choice.
     const b = summary.backup;

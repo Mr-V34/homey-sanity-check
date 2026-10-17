@@ -120,7 +120,18 @@
     "update_item": "__name__ __from__→__to__",
     "update_manual": "__name__ __from__→__to__ (automatisk uppdatering av)",
     "adv_update": "Det finns en nyare version: __list__. Prova att uppdatera först, det hjälper ofta.",
-    "adv_auto_off": "Automatisk uppdatering är av för __list__. Har du valt det med flit kan du uppdatera själv när det passar dig."
+    "adv_auto_off": "Automatisk uppdatering är av för __list__. Har du valt det med flit kan du uppdatera själv när det passar dig.",
+    "change_app_removed": "__name__ avinstallerad",
+    "change_app_added": "__name__ installerad",
+    "change_app_disabled": "__name__ avstängd",
+    "change_app_enabled": "__name__ påslagen igen",
+    "change_app_version": "__name__ uppdaterad till __to__",
+    "change_firmware": "Homey uppdaterad till __to__",
+    "change_more": "och __n__ till",
+    "link_stopped": "Inga oväntade omstarter på __quiet__ (innan dess: __n__ på __span__). Ändrat sedan den senaste: __list__. En av dem hjälpte troligen.",
+    "adv_link_stopped": "Vill du veta vilken: ångra dem en i taget, med några dagar emellan.",
+    "link_started": "Oväntade omstarter började __when__: __n__ de senaste 7 dygnen, inga de 14 dygnen innan. Ändrat veckan före: __list__.",
+    "adv_link_started": "Stäng av eller ta bort det som ändrades, en i taget, det senaste först. Gäller det en appuppdatering: leta efter en nyare version eller meddela utvecklaren."
   },
   "settings": {
     "title": "Sanity Check",

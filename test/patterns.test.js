@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   crashMinutes, timeTriggers, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
+  changeLink,
 } = require('../lib/patterns');
 const { eventText } = require('../lib/report');
 
@@ -153,4 +154,56 @@ test('history: boots at planned times are dropped, crashes and other boots stay'
   assert.deepEqual(dropPlannedBoots(h, [ota, null, 1000]), h.slice(0, 2));
   assert.deepEqual(dropPlannedBoots(undefined, [ota]), []);
   assert.deepEqual(dropPlannedBoots(h, []), h);
+});
+
+// ── Restarts before and after changes ─────────────────────────────────────────
+
+// The user's real restarts: 10-11 20:24, 10-14 07:50 and 12:56 (quiet minute), all UTC.
+const realBoots = ['2026-10-11T20:24:48Z', '2026-10-14T07:50:50Z', '2026-10-14T12:56:00Z']
+  .map(d => ({ kind: 'boot', t: Date.parse(d) }));
+const fw = { kind: 'change', what: 'firmware', t: Date.parse('2026-10-15T18:20:39Z'), from: '13.5.1', to: '13.5.2' };
+const gone = { kind: 'change', what: 'app_removed', t: Date.parse('2026-10-16T10:00:00Z'), id: 'com.x', name: 'X' };
+
+test('link: 3 restarts in 2.7 days, then quiet → "stopped" once it is unlikely by chance', () => {
+  const h = [...realBoots, fw, gone];
+  // Rate 2 per 2.7 days: 2 quiet days is still chance (P ≈ 0.23), 5 days is not (P ≈ 0.025).
+  assert.equal(changeLink(h, Date.parse('2026-10-16T12:56:00Z'), 0), null);
+  const l = changeLink(h, Date.parse('2026-10-19T12:56:00Z'), 0);
+  assert.equal(l.kind, 'stopped');
+  assert.equal(l.n, 3);
+  assert.deepEqual(l.changes.map(c => c.what), ['firmware', 'app_removed']);
+});
+
+test('link: quiet with no change since the last restart, or too few restarts → nothing', () => {
+  const late = Date.parse('2026-10-25T00:00:00Z');
+  assert.equal(changeLink(realBoots, late, 0), null);
+  assert.equal(changeLink([...realBoots.slice(1), fw], late, 0), null);
+});
+
+test('link: restarts that start after 14 quiet watched days → "started" with the changes before', () => {
+  const start = Date.parse('2026-10-20T03:00:00Z');
+  const h = [
+    { kind: 'change', what: 'app_added', t: start - 2 * DAY, id: 'com.y', name: 'Y' },
+    { kind: 'change', what: 'app_version', t: start - 10 * DAY, id: 'com.z', name: 'Z', to: '2.0' }, // too early
+    ...[0, 1, 3].map(d => ({ kind: 'boot', t: start + d * DAY })),
+  ];
+  const now = start + 4 * DAY;
+  const l = changeLink(h, now, start - 20 * DAY);
+  assert.equal(l.kind, 'started');
+  assert.deepEqual(l.changes.map(c => c.id), ['com.y']);
+  // Not watched long enough before → no claim.
+  assert.equal(changeLink(h, now, start - 5 * DAY), null);
+});
+
+test('link: report text lists at most 5 changes, the rest as a count', () => {
+  const { dailySummary } = require('../lib/report');
+  const changes = Array.from({ length: 7 }, (_, i) => ({ kind: 'change', what: 'app_removed', t: i, name: `A${i}` }));
+  const base = { homeyVersion: '13.5.2', bootDate: 0, rebootReason: 'reboot-ota', topCrashers: [], updates: [] };
+  const link = { kind: 'stopped', n: 3, from: 0, last: 2.7 * DAY, quiet: 5 * DAY, changes };
+  const text = dailySummary({ ...base, link }, t, d => String(d));
+  assert.match(text, /daily_ok\(\)\nlink_stopped\(quiet=days\(n=5\),n=3,span=days\(n=2\),list=.*A4,to=undefined\), change_more\(n=2\)\) adv_link_stopped\(\)$/);
+  // Said once: the next morning it's gone, unless the detailed view is on.
+  assert.equal(dailySummary({ ...base, link: { ...link, said: true } }, t, d => String(d)).split('\n').length, 1);
+  const started = dailySummary({ ...base, link: { kind: 'started', n: 3, from: 9, changes: changes.slice(0, 1) } }, t, d => String(d));
+  assert.match(started, /daily_attention\(\)\n⚠ link_started\(when=9,n=3,list=change_app_removed\(name=A0,to=undefined\)\) adv_link_started\(\)$/);
 });

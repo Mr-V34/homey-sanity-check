@@ -132,7 +132,10 @@
     "link_stopped": "Inga oväntade omstarter på __quiet__ (innan dess: __n__ på __span__). Ändrat sedan den senaste: __list__. En av dem hjälpte troligen.",
     "adv_link_stopped": "Vill du veta vilken: ångra dem en i taget, med några dagar emellan.",
     "link_started": "Oväntade omstarter började __when__: __n__ de senaste 7 dygnen, inga de 14 dygnen innan. Ändrat veckan före: __list__.",
-    "adv_link_started": "Stäng av eller ta bort det som ändrades, en i taget, det senaste först. Gäller det en appuppdatering: leta efter en nyare version eller meddela utvecklaren."
+    "adv_link_started": "Stäng av eller ta bort det som ändrades, en i taget, det senaste först. Gäller det en appuppdatering: leta efter en nyare version eller meddela utvecklaren.",
+    "daily_chatty": "En Zigbee-enhet pratar mycket mer än andra av samma sort: __list__.",
+    "chatty_item": "__name__, en __model__, skickar __n__ meddelanden i timmen mot ungefär __median__ för de andra",
+    "adv_chatty": "Det kan bero på placeringen, ett hårdvarufel eller att appen frågar den för ofta. Prova att flytta den närmare en nätdriven Zigbee-enhet, eller se hur ofta appen uppdaterar den."
   },
   "settings": {
     "title": "Sanity Check",

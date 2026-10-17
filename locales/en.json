@@ -132,7 +132,10 @@
     "link_stopped": "No unexpected restarts for __quiet__ (before that: __n__ in __span__). Changed since the last one: __list__. One of these most likely helped.",
     "adv_link_stopped": "If you want to know which: undo them one at a time, a few days apart.",
     "link_started": "Unexpected restarts started __when__: __n__ in the last 7 days, none in the 14 days before. Changed in the week before: __list__.",
-    "adv_link_started": "Turn off or remove what changed, one at a time, latest first. For an app update: look for a newer version or tell its developer."
+    "adv_link_started": "Turn off or remove what changed, one at a time, latest first. For an app update: look for a newer version or tell its developer.",
+    "daily_chatty": "A Zigbee device talks much more than others of the same kind: __list__.",
+    "chatty_item": "__name__, a __model__, sends __n__ messages an hour against about __median__ for the others",
+    "adv_chatty": "That can be its placement, a hardware fault or an app asking it too often. Try moving it closer to a mains-powered Zigbee device, or check how often its app updates it."
   },
   "settings": {
     "title": "Sanity Check",

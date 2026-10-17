@@ -11,7 +11,7 @@ const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmort
 const { BASE, analyzeSignals } = require('./lib/verdict');
 const {
   crashMinutes, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
-  changeLink,
+  changeLink, stableFor,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
 const {
@@ -78,7 +78,10 @@ class SanityCheckApp extends Homey.App {
       delete next.silent; // silent-device list, removed in 0.5.0
       const events = [];
       const firstRun = !prev.bootId; // baseline only: show a summary so the user sees it works
-      next.since = prev.since || now; // when watching began, for changeLink
+      // When watching began (changeLink, stable days): the earliest we know.
+      // Older versions didn't store it, but the boots they saw prove it.
+      const seenAt = (prev.boots || []).map(b => Date.parse(b.seenAt)).filter(Number.isFinite);
+      next.since = Math.min(Number.isFinite(prev.since) ? prev.since : now, ...seenAt);
 
       const info = await this._get('system.getInfo', () => this._api.getInfo());
       if (info) {
@@ -342,6 +345,7 @@ class SanityCheckApp extends Homey.App {
       ],
       swapApps:     state.swapApps && now - state.swapApps.t < DAY ? state.swapApps : null,
       link:         changeLink(state.history, now, state.since),
+      stableFor:    stableFor(state.history, now, state.since),
       ...(await this._daily(now)),
     };
     // "Restarts stopped" is said once per quiet spell (keyed by the last restart).

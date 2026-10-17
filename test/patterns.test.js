@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   crashMinutes, timeTriggers, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
-  changeLink,
+  changeLink, stableFor,
 } = require('../lib/patterns');
 const { eventText } = require('../lib/report');
 
@@ -206,4 +206,17 @@ test('link: report text lists at most 5 changes, the rest as a count', () => {
   assert.equal(dailySummary({ ...base, link: { ...link, said: true } }, t, d => String(d)).split('\n').length, 1);
   const started = dailySummary({ ...base, link: { kind: 'started', n: 3, from: 9, changes: changes.slice(0, 1) } }, t, d => String(d));
   assert.match(started, /daily_attention\(\)\n⚠ link_started\(when=9,n=3,list=change_app_removed\(name=A0,to=undefined\)\) adv_link_started\(\)$/);
+});
+
+test('stable: time since the last unexpected restart or crash, never before watching began', () => {
+  const now = Date.parse('2026-10-20T06:00:00Z');
+  const h = [...realBoots, fw, { kind: 'crash', t: Date.parse('2026-10-15T06:00:00Z') }];
+  assert.equal(stableFor(h, now, 0), 5 * DAY); // the change does not count
+  assert.equal(stableFor(h, now, Date.parse('2026-10-18T06:00:00Z')), 2 * DAY);
+  assert.equal(stableFor(h, now, undefined), null);
+  const { dailySummary } = require('../lib/report');
+  const base = { homeyVersion: '13.5.2', bootDate: 0, rebootReason: 'reboot-ota', topCrashers: [], updates: [] };
+  assert.match(dailySummary({ ...base, stableFor: 5 * DAY }, t, String), /daily_stable\(time=days\(n=5\)\)$/);
+  assert.match(dailySummary({ ...base, stableFor: 20 * 3600e3 }, t, String), /daily_ok\(\)$/);
+  assert.match(dailySummary({ ...base, stableFor: 5 * DAY, unplanned24h: 1 }, t, String), /daily_attention/);
 });

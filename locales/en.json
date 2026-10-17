@@ -94,6 +94,7 @@
     "backup_none": "Backup: no successful backup found.",
     "daily_storage": "Storage: __free__ free of __total__.",
     "daily_ok": "All looks normal.",
+    "daily_stable": "All looks normal: no unexpected restarts or app crashes for __time__.",
     "daily_attention": "Worth a look:",
     "daily_unplanned": "__n__ unexpected restart(s) in the last 24 h.",
     "daily_crashes": "App crashes in the last 24 h: __list__.",

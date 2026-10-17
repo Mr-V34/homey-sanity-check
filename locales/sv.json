@@ -94,6 +94,7 @@
     "backup_none": "Säkerhetskopia: ingen lyckad säkerhetskopia hittades.",
     "daily_storage": "Lagring: __free__ ledigt av __total__.",
     "daily_ok": "Allt ser normalt ut.",
+    "daily_stable": "Allt ser normalt ut: inga oväntade omstarter eller appkrascher på __time__.",
     "daily_attention": "Värt att titta på:",
     "daily_unplanned": "__n__ oväntad(e) omstart(er) senaste 24 h.",
     "daily_crashes": "Appkrascher senaste 24 h: __list__.",

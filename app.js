@@ -10,7 +10,7 @@ const {
 const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
 const { BASE, analyzeSignals } = require('./lib/verdict');
 const {
-  crashMinutes, scheduledNear, addHistory, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
+  crashMinutes, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
 const {
@@ -112,8 +112,8 @@ class SanityCheckApp extends Homey.App {
         events.push(...r.events);
       }
 
-      // History of unplanned restarts and crashes, with the best time we have.
-      const seen = [];
+      // History of unplanned restarts, crashes and changes, with the best time we have.
+      const seen = changeEntries(events, now);
       const since = prev.lastCheck ? new Date(prev.lastCheck.at).getTime() : now - 60 * 60 * 1000;
       for (const e of events) {
         if (e.type !== 'app_crashed') continue;

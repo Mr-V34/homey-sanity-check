@@ -59,6 +59,15 @@ test('firmware: reported once per new version', () => {
 
 // ── Apps ──────────────────────────────────────────────────────────────────────
 
+test('apps: uninstalled, installed and re-enabled apps are changes; first run and self are not', () => {
+  const s1 = checkApps([app(), app({ id: 'com.y', name: 'Y', enabled: false }), app({ id: 'me' })], {}, T0, 'me').state;
+  assert.equal(checkApps([app()], {}, T0).events.length, 0);
+  const r = checkApps([app({ id: 'com.y', name: 'Y', enabled: true }), app({ id: 'com.z', name: 'Z' })], s1, T0 + HOUR, 'me');
+  assert.deepEqual(r.events.map(e => [e.type, e.id]).sort(),
+    [['app_added', 'com.z'], ['app_enabled', 'com.y'], ['app_removed', 'com.x']]);
+  assert.equal(r.events.find(e => e.type === 'app_removed').name, 'X');
+});
+
 test('apps: first sighting is a baseline even with old crashes', () => {
   const r = checkApps([app({ crashedCount: 7 })], {}, T0);
   assert.equal(r.events.length, 0);

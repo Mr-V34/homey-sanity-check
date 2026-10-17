@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  crashMinutes, timeTriggers, scheduledNear, addHistory, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
+  crashMinutes, timeTriggers, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
 } = require('../lib/patterns');
 const { eventText } = require('../lib/report');
 
@@ -64,6 +64,30 @@ test('history: keeps 30 days and at most 60 events, sorted', () => {
   const h = addHistory([{ kind: 'boot', t: now - 31 * DAY }], Array.from({ length: 70 }, (_, i) => ({ kind: 'crash', t: now - i * MIN })), now);
   assert.equal(h.length, 60);
   assert.ok(h.every((e, i) => i === 0 || h[i - 1].t <= e.t));
+});
+
+test('history: changes have their own cap and never push out restarts', () => {
+  const now = at('12:00:00');
+  const changes = Array.from({ length: 70 }, (_, i) => ({ kind: 'change', t: now - i * MIN }));
+  const h = addHistory([{ kind: 'boot', t: now - DAY }], changes, now);
+  assert.equal(h.filter(e => e.kind === 'change').length, 60);
+  assert.equal(h.filter(e => e.kind === 'boot').length, 1);
+  assert.ok(h.every((e, i) => i === 0 || h[i - 1].t <= e.t));
+});
+
+test('history: change entries from events; firmware dated at its boot, crashes ignored', () => {
+  const now = at('12:00:00');
+  const c = changeEntries([
+    { type: 'app_removed', id: 'com.x', name: 'X', version: '1.0.0' },
+    { type: 'homey_version_changed', from: '13.5.1', to: '13.5.2', at: at('10:00:00') },
+    { type: 'app_version_changed', id: 'com.y', name: 'Y', from: '1.0', to: '1.1' },
+    { type: 'app_crashed', id: 'com.z' },
+  ], now);
+  assert.deepEqual(c, [
+    { kind: 'change', what: 'app_removed', t: now, id: 'com.x', name: 'X' },
+    { kind: 'change', what: 'firmware', t: at('10:00:00'), from: '13.5.1', to: '13.5.2' },
+    { kind: 'change', what: 'app_version', t: now, id: 'com.y', name: 'Y', from: '1.0', to: '1.1' },
+  ]);
 });
 
 test('recurring: two restarts around 09:47 on different days; same day does not count', () => {

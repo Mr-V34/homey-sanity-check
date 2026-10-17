@@ -166,7 +166,7 @@ test('report: durations', () => {
 
 // ── Memory (RSS/PSS) ──────────────────────────────────────────────────────────
 
-const { memoryGrowth, pssSnapshot, pssFromMemoryInfo, MB } = require('../lib/checks');
+const { updateFloors, risingFloors, pssSnapshot, pssFromMemoryInfo, MB } = require('../lib/checks');
 
 test('memory: PSS parsed from real getMemoryInfo shape', () => {
   const info = { total: 1, types: {
@@ -205,15 +205,28 @@ test('memory: suspects carry max PSS and "no message" only when every crash lack
   assert.deepEqual(s.map(x => [x.id, x.pss, x.noMessage]), [['a', 140e6, true], ['b', null, false]]);
 });
 
-test('memory: only apps that grew 10 MB or more since the snapshot count', () => {
-  const apps = {
-    big: { name: 'Big', pss: 52 * MB }, mid: { name: 'Mid', pss: 31 * MB },
-    ok: { name: 'Ok', pss: 20 * MB }, none: { name: 'None', pss: null },
+test('memory floor: lowest PSS per day; a new version starts over; removed apps drop out', () => {
+  let f = updateFloors({}, { a: { version: '1', pss: 40 * MB } }, 'd1');
+  f = updateFloors(f, { a: { version: '1', pss: 55 * MB } }, 'd1');   // sawtooth peak: floor stays
+  f = updateFloors(f, { a: { version: '1', pss: 38 * MB } }, 'd1');
+  f = updateFloors(f, { a: { version: '1', pss: 50 * MB } }, 'd2');
+  assert.deepEqual(f.a, { v: '1', d: [['d1', 38 * MB], ['d2', 50 * MB]] });
+  assert.deepEqual(updateFloors(f, { a: { version: '2', pss: 30 * MB } }, 'd2').a.d, [['d2', 30 * MB]]);
+  assert.deepEqual(updateFloors(f, {}, 'd3'), {});
+  const many = Array.from({ length: 12 }, (_, i) => `d${i}`).reduce((acc, d) => updateFloors(acc, { a: { version: '1', pss: 1 } }, d), {});
+  assert.equal(many.a.d.length, 8); // 7 whole days + today
+});
+
+test('memory floor: rising 3 whole days in a row by ≥ 10 MB is a finding; sawtooth and today are not', () => {
+  const apps = { leak: { name: 'Leak' }, saw: { name: 'Saw' }, slow: { name: 'Slow' } };
+  const floors = {
+    leak: { v: '1', d: [['d1', 30 * MB], ['d2', 33 * MB], ['d3', 37 * MB], ['d4', 42 * MB], ['d5', 20 * MB]] },
+    saw:  { v: '1', d: [['d1', 30 * MB], ['d2', 45 * MB], ['d3', 31 * MB], ['d4', 46 * MB]] },
+    slow: { v: '1', d: [['d1', 30 * MB], ['d2', 31 * MB], ['d3', 32 * MB], ['d4', 33 * MB]] },
   };
-  const g = memoryGrowth(apps, { big: 44 * MB, mid: 18 * MB, ok: 30 * MB });
-  assert.deepEqual(g.map(x => [x.id, x.change]), [['mid', 13 * MB]]); // big +8 is below the bar, ok shrank
-  assert.deepEqual(memoryGrowth(apps, {}), []); // no snapshot yet: nothing to compare
-  assert.deepEqual(pssSnapshot(apps), { big: 52 * MB, mid: 31 * MB, ok: 20 * MB });
+  assert.deepEqual(risingFloors(floors, apps, 'd5'), [{ id: 'leak', name: 'Leak', days: 3, change: 12 * MB, pss: 42 * MB }]);
+  // Seen on day 6, the restart on day 5 (floor 20 MB) has broken the rise.
+  assert.deepEqual(risingFloors(floors, apps, 'd6'), []);
 });
 
 test('report: crash text adds memory and the "stopped by Homey" hint', () => {

@@ -109,7 +109,7 @@ test('daily summary: one line when nothing stands out', () => {
 test('daily summary: only findings, each with ⚠, then things to act on', () => {
   const text = dailySummary(day({
     unplanned24h: 2,
-    grew: [{ id: 'd', name: 'Device Capabilities', pss: 53e6, change: 12e6 }],
+    grew: [{ id: 'd', name: 'Device Capabilities', pss: 53e6, change: 12e6, days: 3 }],
     sys: { free: 467e6, swap: 74e6, core: 348e6 },
     swapApps: { t: NOW, swap: 180e6, top: [{ id: 'v', name: 'Virtuella enheter', swap: 40e6 }, { id: 's', name: 'Shelly', swap: 3e6 }] },
     storage: { free: 50e6, total: 2657828864, low: true },
@@ -122,7 +122,7 @@ test('daily summary: only findings, each with ⚠, then things to act on', () =>
   assert.match(lines[0], /daily_attention\(\)$/);
   // Every finding ends with advice (the backup text carries its own).
   assert.match(lines[1], /^⚠ daily_unplanned\(n=2\) adv_unplanned\(\)$/);
-  assert.match(lines[2], /^⚠ daily_grew\(list=grew_item\(name=Device Capabilities,change=12 MB,pss=53 MB\)\) adv_grew\(\)$/);
+  assert.match(lines[2], /^⚠ daily_grew\(days=3,list=grew_item\(name=Device Capabilities,change=12 MB,pss=53 MB\)\) adv_grew\(\)$/);
   assert.match(lines[3], /^⚠ daily_swap_app\(list=Virtuella enheter 40 MB\) adv_swap\(\)$/); // Shelly 3 MB is below the bar
   assert.match(lines[4], /^⚠ daily_storage\(free=0\.1 GB,total=2\.7 GB\) adv_storage\(\)$/);
   assert.match(lines[5], /^⚠ backup_overdue\(date=2026-09-22,n=22\)$/);
@@ -182,7 +182,7 @@ test('daily summary: an app with a problem and a newer version gets update advic
     topCrashers: [{ id: 'x', name: 'X', version: '1.0', crashes: 3 }],
     grew: [
       { id: 'a', name: 'Alpha', pss: 60e6, change: 20e6 },
-      { id: 'n', name: 'Netatmo', pss: 54e6, change: 12e6 },
+      { id: 'n', name: 'Netatmo', pss: 54e6, change: 12e6, days: 3 },
     ],
     updates: [
       { id: 'n', name: 'Netatmo', version: '5.8.7', update: '5.8.8', auto: false },
@@ -192,7 +192,7 @@ test('daily summary: an app with a problem and a newer version gets update advic
   }), t, fmt).split('\n');
   assert.match(lines[1], /^⚠ daily_unplanned/); // unexpected restarts stay on top
   // Netatmo moves up: first in its list, and its finding before the crash line.
-  assert.equal(lines[2], '⚠ daily_grew(list=grew_item(name=Netatmo,change=12 MB,pss=54 MB); '
+  assert.equal(lines[2], '⚠ daily_grew(days=3,list=grew_item(name=Netatmo,change=12 MB,pss=54 MB); '
     + 'grew_item(name=Alpha,change=20 MB,pss=60 MB)) adv_update(list=Netatmo 5.8.8) adv_auto_off(list=Netatmo) adv_grew()');
   assert.match(lines[3], /^⚠ daily_crashes\(.*\) adv_crashes\(\)$/); // no update for X: no update advice
   // Netatmo was advised above; the others stay an info line, manual ones marked.
@@ -212,7 +212,7 @@ test('daily summary: an app with a problem and a newer version gets update advic
 
 test('daily summary: automatic updates on → no note about manual updates', () => {
   const text = dailySummary(day({
-    grew: [{ id: 'n', name: 'Netatmo', pss: 54e6, change: 12e6 }],
+    grew: [{ id: 'n', name: 'Netatmo', pss: 54e6, change: 12e6, days: 3 }],
     updates: [{ id: 'n', name: 'Netatmo', version: '5.8.7', update: '5.8.8', auto: true }],
   }), t, fmt);
   assert.match(text, /adv_update\(list=Netatmo 5\.8\.8\) adv_grew\(\)$/m);

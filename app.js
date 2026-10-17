@@ -4,7 +4,7 @@ const Homey = require('homey');
 const { ReadOnlyApi } = require('./lib/web-api');
 const {
   checkSystem, checkFirmware, checkApps, suspects, DAY,
-  memoryGrowth, largestApps, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
+  updateFloors, risingFloors, largestApps, pssSnapshot, pssFromMemoryInfo, isUnplanned, systemMemory, unplannedWithin,
   backupStatus, firmwareSettings, storageStatus, swapDue, swapApps,
 } = require('./lib/checks');
 const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmortem');
@@ -104,6 +104,9 @@ class SanityCheckApp extends Homey.App {
         events.push(...r.events);
         const me = apps[selfId];
         next.self = { pss: pssById[selfId] ?? null, rss: me && me.usage ? me.usage.mem : null };
+        // Sanity Check's own floor too: it must not be blind to itself.
+        const own = me ? { [selfId]: { name: me.name, version: me.version, pss: next.self.pss } } : {};
+        next.floors = updateFloors(prev.floors, { ...next.apps, ...own }, this._day(now));
         if (swapDue(next.sys, prev.swapApps, now)) next.swapApps = await this._swapApps(next, now);
       }
 
@@ -329,7 +332,7 @@ class SanityCheckApp extends Homey.App {
       updates:      Object.entries(apps).filter(([, a]) => a.update)
         .map(([id, a]) => ({ id, name: a.name, version: a.version, update: a.update, auto: a.auto })),
       firmware:     state.firmwareAvailable,
-      grew:         memoryGrowth(apps, state.pssAtSummary),
+      grew:         risingFloors(state.floors, { ...apps, [this.homey.manifest.id]: { name: this.homey.manifest.name.en } }, today),
       largest:      largestApps(apps, state.pssAtSummary),
       self:         state.self,
       sys:          state.sys,
@@ -367,6 +370,14 @@ class SanityCheckApp extends Homey.App {
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  // Local calendar day "YYYY-MM-DD" in Homey's timezone.
+  _day(t) {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('sv-SE', {
+      timeZone: this.homey.clock.getTimezone(), year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(new Date(t)).map(x => [x.type, x.value]));
+    return `${p.year}-${p.month}-${p.day}`;
+  }
 
   _local(t) {
     const p = Object.fromEntries(new Intl.DateTimeFormat('sv-SE', {

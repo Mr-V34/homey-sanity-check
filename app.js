@@ -14,7 +14,7 @@ const {
   changeLink, stableFor,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
-const { zigbeeCounts, chattyDevices } = require('./lib/radio');
+const { zigbeeCounts, chattyDevices, zwaveCounts, failingZwave, zwaveNames } = require('./lib/radio');
 const {
   DEFAULT_SUMMARY_HOUR, SUMMARY_DETAILS, CHECK_INTERVAL, FIRST_CHECK_DELAY,
 } = require('./lib/constants');
@@ -258,8 +258,12 @@ class SanityCheckApp extends Homey.App {
     // No Zigbee radio (or the call fails): no reading, nothing compared.
     const zb = await get('zigbee.getState', () => this._api.getZigbeeState());
     const zigbee = zb ? zigbeeCounts(zb, now) : null;
+    // Z-Wave the same way.
+    const zw = await get('zwave.getState', () => this._api.getZwaveState());
+    const zwave = zw ? zwaveCounts(zw, now) : null;
+    if (zwave) this.log(`Z-Wave: ${Object.keys(zwave.nodes).length} node(s) read`);
     this.log(`Daily: backup ${backup ? `${backup.days} d, auto ${backup.auto}` : '?'}, channel ${firmwareCfg ? `${firmwareCfg.channel}, auto ${firmwareCfg.auto}` : '?'}, storage ${storage ? `${Math.round(storage.free / 1e6)} MB free` : '?'}`);
-    return { backup, firmwareCfg, storage, zigbee };
+    return { backup, firmwareCfg, storage, zigbee, zwave };
   }
 
   // Exact crash minutes from the app's RAM in Insights: lastHour (5 s steps)
@@ -370,10 +374,18 @@ class SanityCheckApp extends Homey.App {
     }
     // Devices that talk much more than others of their kind since yesterday.
     summary.chatty = chattyDevices(state.zigbee, summary.zigbee);
+    summary.zwChatty = chattyDevices(state.zwave, summary.zwave);
+    summary.zwFailing = failingZwave(state.zwave, summary.zwave); // marks `bad` for tomorrow
+    // Names only when there is something to say: the device list is big.
+    if (summary.zwChatty.length || summary.zwFailing.length) {
+      const names = zwaveNames(await this._get('devices.getDevices', () => this._api.getDevices()));
+      for (const f of [...summary.zwChatty, ...summary.zwFailing]) f.name = names[f.id] || this.homey.__('report.zw_node', { id: f.id });
+    }
     // Snapshots for the next summary: "+N MB since yesterday" and Zigbee counters.
     if (!force) {
       this.homey.settings.set('state', {
         ...state, pssAtSummary: pssSnapshot(apps), zigbee: summary.zigbee || state.zigbee || null,
+        zwave: summary.zwave || state.zwave || null,
       });
     }
     const detail = this.homey.settings.get('summaryDetail');

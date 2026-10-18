@@ -134,7 +134,14 @@
     "adv_link_started": "Stäng av eller ta bort det som ändrades, en i taget, det senaste först. Gäller det en appuppdatering: leta efter en nyare version eller meddela utvecklaren.",
     "daily_chatty": "En Zigbee-enhet pratar mycket mer än andra av samma sort: __list__.",
     "chatty_item": "__name__, en __model__, skickar __n__ meddelanden i timmen mot ungefär __median__ för de andra",
-    "adv_chatty": "Det kan bero på placeringen, ett hårdvarufel eller att appen frågar den för ofta. Prova att flytta den närmare en nätdriven Zigbee-enhet, eller se hur ofta appen uppdaterar den."
+    "adv_chatty": "Det kan bero på placeringen, ett hårdvarufel eller att appen frågar den för ofta. Prova att flytta den närmare en nätdriven Zigbee-enhet, eller se hur ofta appen uppdaterar den.",
+    "daily_zw_failing": "En Z-Wave-enhet får ofta inte fram sina meddelanden, två dygn i rad: __list__.",
+    "zw_failing_item": "__name__, __pct__ % av __n__ sändningar misslyckades",
+    "adv_zw_failing": "Radiolänken är svag eller störd. Prova att flytta enheten eller Homey, eller sätt en nätdriven Z-Wave-enhet emellan som skickar vidare meddelanden, och håll den borta från metall. Se sedan om andelen går ner.",
+    "daily_zw_chatty": "En Z-Wave-enhet pratar mycket mer än andra av samma sort: __list__.",
+    "zw_chatty_item": "__name__ skickar __n__ meddelanden i timmen mot ungefär __median__ för de andra",
+    "adv_zw_chatty": "Kontrollera rapportintervallen i enhetens inställningar, och var den är placerad.",
+    "zw_node": "Z-Wave-nod __id__"
   },
   "settings": {
     "title": "Sanity Check",

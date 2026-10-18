@@ -114,7 +114,6 @@
     "adv_swap": "Starta om appen för att frigöra minnet. Händer det ofta, meddela utvecklaren.",
     "adv_storage": "Ta bort appar du inte använder.",
     "adv_recurring": "Kolla Flows och appar som körs vid den tiden.",
-    "adv_self": "Starta om Sanity Check och rapportera det via appens sida i App Store.",
     "grew_item": "__name__ har vuxit __change__ och använder nu __pss__",
     "largest_more": "__name__ __pss__, __change__ mer än i går",
     "largest_less": "__name__ __pss__, __change__ mindre än i går",
@@ -139,13 +138,14 @@
   },
   "settings": {
     "title": "Sanity Check",
-    "subtitle": "Den dagliga sammanfattningen: när den kommer och hur mycket den visar.",
+    "subtitle": "Den dagliga sammanfattningen: när den kommer och vad den visar.",
     "summary": "Daglig sammanfattning",
     "summary_hour": "Klockslag (0–23)",
     "save": "Spara",
     "saved": "Sparat",
     "summary_detail": "Detaljnivå",
     "detail_short": "Kort – bara det som behöver uppmärksamhet",
-    "detail_full": "Detaljerad – allt som mättes"
+    "detail_full": "Detaljerad – allt som mättes",
+    "report_backup": "Rapportera om säkerhetskopior. Stäng av om du inte använder Homeys säkerhetskopiering."
   }
 }

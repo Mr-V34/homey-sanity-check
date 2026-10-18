@@ -201,7 +201,7 @@ test('link: report text lists at most 5 changes, the rest as a count', () => {
   const base = { homeyVersion: '13.5.2', bootDate: 0, rebootReason: 'reboot-ota', topCrashers: [], updates: [] };
   const link = { kind: 'stopped', n: 3, from: 0, last: 2.7 * DAY, quiet: 5 * DAY, changes };
   const text = dailySummary({ ...base, link }, t, d => String(d));
-  assert.match(text, /daily_ok\(\)\nlink_stopped\(quiet=days\(n=5\),n=3,span=days\(n=2\),list=.*A4,to=undefined\), change_more\(n=2\)\) adv_link_stopped\(\)$/);
+  assert.match(text, /daily_ok\(\)\n\nlink_stopped\(quiet=days\(n=5\),n=3,span=days\(n=2\),list=.*A4,to=undefined\), change_more\(n=2\)\) adv_link_stopped\(\)$/);
   // Said once: the next morning it's gone, unless the detailed view is on.
   assert.equal(dailySummary({ ...base, link: { ...link, said: true } }, t, d => String(d)).split('\n').length, 1);
   const started = dailySummary({ ...base, link: { kind: 'started', n: 3, from: 9, changes: changes.slice(0, 1) } }, t, d => String(d));

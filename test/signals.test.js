@@ -118,7 +118,12 @@ test('daily summary: only findings, each with ⚠, then things to act on', () =>
     updates: [{ name: 'Aqara', version: '1.16.3', update: '1.18.1' }],
     firmwareCfg: { channel: 'beta', auto: false },
   }), t, fmt);
-  const lines = text.split('\n');
+  // Findings, then things to act on, with a blank line between the blocks.
+  const [findings, info, ...more] = text.split('\n\n');
+  assert.equal(more.length, 0);
+  assert.deepEqual(info.split('\n').map(l => l.split('(')[0]), ['daily_updates', 'daily_channel']);
+  const lines = text.split('\n').filter(Boolean);
+  assert.equal(findings.split('\n').length, 6);
   assert.match(lines[0], /daily_attention\(\)$/);
   // Every finding ends with advice (the backup text carries its own).
   assert.match(lines[1], /^⚠ daily_unplanned\(n=2\) adv_unplanned\(\)$/);
@@ -126,10 +131,10 @@ test('daily summary: only findings, each with ⚠, then things to act on', () =>
   assert.match(lines[3], /^⚠ daily_swap_app\(list=Virtuella enheter 40 MB\) adv_swap\(\)$/); // Shelly 3 MB is below the bar
   assert.match(lines[4], /^⚠ daily_storage\(free=0\.1 GB,total=2\.7 GB\) adv_storage\(\)$/);
   assert.match(lines[5], /^⚠ backup_overdue\(date=2026-09-22,n=22\)$/);
-  assert.match(lines[6], /^⚠ daily_self\(pss=31 MB\) adv_self\(\)$/);
-  assert.match(lines[7], /^daily_updates\(list=update_item\(name=Aqara,from=1\.16\.3,to=1\.18\.1\)\)$/);
-  assert.match(lines[8], /^daily_channel\(channel=beta\)$/);
-  assert.equal(lines.length, 9);
+  // Sanity Check at 31 MB is no finding: its own memory goes through the same growth rule.
+  assert.match(lines[6], /^daily_updates\(list=update_item\(name=Aqara,from=1\.16\.3,to=1\.18\.1\)\)$/);
+  assert.match(lines[7], /^daily_channel\(channel=beta\)$/);
+  assert.equal(lines.length, 8);
 });
 
 test('daily summary: a late backup already reported is not repeated', () => {
@@ -144,7 +149,9 @@ test('daily summary, detailed: same head and findings, then everything measured'
     swapApps: { t: NOW, swap: 74e6, top: [{ id: 'v', name: 'Virtuella enheter', swap: 4e6 }] },
   });
   assert.equal(dailySummary(s, t, fmt, 'short').split('\n').length, 1);
-  const lines = dailySummary(s, t, fmt, 'full').split('\n');
+  const full = dailySummary(s, t, fmt, 'full');
+  assert.equal(full.split('\n\n').length, 2); // head, blank line, details
+  const lines = full.split('\n').filter(Boolean);
   assert.match(lines[0], /daily_ok\(\)$/);
   assert.deepEqual(lines.slice(1).map(l => l.split('(')[0]), [
     'v_details', 'daily_restarts', 'daily_no_crashes', 'daily_largest', 'daily_system',
@@ -189,7 +196,7 @@ test('daily summary: an app with a problem and a newer version gets update advic
       { id: 'q', name: 'Aqara', version: '1.16.3', update: '1.18.1', auto: false },
       { id: 'z', name: 'Zeta', version: '2.0', update: '2.1', auto: true },
     ],
-  }), t, fmt).split('\n');
+  }), t, fmt).split('\n').filter(Boolean);
   assert.match(lines[1], /^⚠ daily_unplanned/); // unexpected restarts stay on top
   // Netatmo moves up: first in its list, and its finding before the crash line.
   assert.equal(lines[2], '⚠ daily_grew(days=3,list=grew_item(name=Netatmo,change=12 MB,pss=54 MB); '

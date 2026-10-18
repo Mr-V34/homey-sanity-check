@@ -114,7 +114,6 @@
     "adv_swap": "Restart the app to free that memory. If it happens often, tell its developer.",
     "adv_storage": "Remove apps you don't use.",
     "adv_recurring": "Check the Flows and apps that run at that time.",
-    "adv_self": "Restart Sanity Check and report it on its App Store page.",
     "grew_item": "__name__ grew __change__ and now uses __pss__",
     "largest_more": "__name__ __pss__, __change__ more than yesterday",
     "largest_less": "__name__ __pss__, __change__ less than yesterday",
@@ -139,13 +138,14 @@
   },
   "settings": {
     "title": "Sanity Check",
-    "subtitle": "The daily summary: when it comes and how much it shows.",
+    "subtitle": "The daily summary: when it comes and what it shows.",
     "summary": "Daily summary",
     "summary_hour": "Hour of day (0–23)",
     "save": "Save",
     "saved": "Saved",
     "summary_detail": "Detail",
     "detail_short": "Short – only what needs attention",
-    "detail_full": "Detailed – everything that was measured"
+    "detail_full": "Detailed – everything that was measured",
+    "report_backup": "Report on backups. Turn off if you don't use Homey's backups."
   }
 }

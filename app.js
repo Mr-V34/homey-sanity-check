@@ -244,7 +244,8 @@ class SanityCheckApp extends Homey.App {
   // Backup, firmware channel and storage for the daily summary.
   async _daily(now) {
     const get = (label, fn) => this._get(label, fn);
-    const backup = backupStatus(
+    // Not backing up can be the user's own choice: then backups aren't read or shown.
+    const backup = this.homey.settings.get('reportBackup') === false ? null : backupStatus(
       await get('backup.lastSuccessfulBackup', () => this._api.getBackupLast()),
       await get('backup.automaticBackupsEnabled', () => this._api.getBackupAuto()),
       now,

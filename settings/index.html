@@ -22,6 +22,13 @@
         <option value="full"></option>
       </select>
     </div>
+    <div class="homey-form-group">
+      <label class="homey-form-checkbox">
+        <input class="homey-form-checkbox-input" id="reportBackup" type="checkbox">
+        <span class="homey-form-checkbox-checkmark"></span>
+        <span class="homey-form-checkbox-text" id="reportBackupText"></span>
+      </label>
+    </div>
   </fieldset>
 
   <button id="save" class="homey-button-primary-full" data-i18n="settings.save"></button>
@@ -34,14 +41,19 @@
     function onHomeyReady(Homey) {
       const hourInput = document.getElementById('summaryHour');
       const detailInput = document.getElementById('summaryDetail');
+      const backupInput = document.getElementById('reportBackup');
       // data-i18n is documented for headings only, so the options get their text here.
       for (const option of detailInput.options) option.textContent = Homey.__(`settings.detail_${option.value}`);
+      document.getElementById('reportBackupText').textContent = Homey.__('settings.report_backup');
 
       Homey.get('summaryHour', (err, h) => {
         hourInput.value = Number.isInteger(h) ? h : DEFAULT_SUMMARY_HOUR;
         Homey.get('summaryDetail', (err2, d) => {
           detailInput.value = SUMMARY_DETAILS.includes(d) ? d : SUMMARY_DETAILS[0];
-          Homey.ready();
+          Homey.get('reportBackup', (err3, b) => {
+            backupInput.checked = b !== false; // on unless turned off
+            Homey.ready();
+          });
         });
       });
 
@@ -52,7 +64,10 @@
           if (err) return Homey.alert(err);
           Homey.set('summaryDetail', detail, err2 => {
             if (err2) return Homey.alert(err2);
-            Homey.alert(Homey.__('settings.saved'));
+            Homey.set('reportBackup', backupInput.checked, err3 => {
+              if (err3) return Homey.alert(err3);
+              Homey.alert(Homey.__('settings.saved'));
+            });
           });
         });
       });

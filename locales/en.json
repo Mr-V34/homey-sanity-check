@@ -120,7 +120,7 @@
     "update_item": "__name__ __from__→__to__",
     "update_manual": "__name__ __from__→__to__ (automatic updates off)",
     "adv_update": "A newer version is available: __list__. Try updating first, it often helps.",
-    "adv_auto_off": "Automatic updates are off for __list__. If you chose that on purpose, update by hand when it suits you.",
+    "adv_auto_off": "Automatic updates are off for __list__. If that is your choice, update by hand when it suits you.",
     "change_app_removed": "__name__ uninstalled",
     "change_app_added": "__name__ installed",
     "change_app_disabled": "__name__ turned off",

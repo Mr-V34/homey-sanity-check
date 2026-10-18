@@ -120,7 +120,7 @@
     "update_item": "__name__ __from__→__to__",
     "update_manual": "__name__ __from__→__to__ (automatisk uppdatering av)",
     "adv_update": "Det finns en nyare version: __list__. Prova att uppdatera först, det hjälper ofta.",
-    "adv_auto_off": "Automatisk uppdatering är av för __list__. Har du valt det med flit kan du uppdatera själv när det passar dig.",
+    "adv_auto_off": "Automatisk uppdatering är av för __list__. Har du valt det själv kan du uppdatera när det passar dig.",
     "change_app_removed": "__name__ avinstallerad",
     "change_app_added": "__name__ installerad",
     "change_app_disabled": "__name__ avstängd",

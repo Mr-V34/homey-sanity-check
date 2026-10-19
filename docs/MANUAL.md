@@ -10,7 +10,7 @@ A short guide to the Homey app that tells you why your Homey Pro restarted.
 
 ### How it works
 
-Once an hour the app reads Homey's system info, memory, installed apps and available updates, and compares them with the previous check. It only **reads**; it never restarts, updates or changes anything. The first check runs 10 minutes after the app starts, so other apps have time to start after a reboot before it reads anything.
+Once an hour, on the full hour, the app reads Homey's system info, memory, installed apps and available updates, and compares them with the previous check. It only **reads**; it never restarts, updates or changes anything. The first check runs 10 minutes after the app starts, so other apps have time to start after a reboot before it reads anything.
 
 Everything is an **indication, not proof**. If an app crashed 100 times before a restart, it is the likely suspect. After an unplanned restart Sanity Check gives a likely cause as advice, and every line says what was measured.
 
@@ -93,7 +93,7 @@ One check per hour, under one second. After an unplanned restart, once, about 75
 
 ### Så fungerar det
 
-En gång i timmen läser appen Homeys systeminfo, minne, installerade appar och tillgängliga uppdateringar, och jämför med förra kontrollen. Den **läser** bara: den startar aldrig om, uppdaterar eller ändrar något. Första kontrollen körs 10 minuter efter att appen startat, så att andra appar hinner starta efter en omstart innan den läser något.
+En gång i timmen, på hel timme, läser appen Homeys systeminfo, minne, installerade appar och tillgängliga uppdateringar, och jämför med förra kontrollen. Den **läser** bara: den startar aldrig om, uppdaterar eller ändrar något. Första kontrollen körs 10 minuter efter att appen startat, så att andra appar hinner starta efter en omstart innan den läser något.
 
 Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger före en omstart är den den troliga misstänkta. Efter en oplanerad omstart ger Sanity Check en trolig orsak som råd, och varje rad säger vad som mättes.
 

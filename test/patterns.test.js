@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   crashMinutes, timeTriggers, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
-  changeLink, stableFor,
+  changeLink, stableFor, untilNextHour,
 } = require('../lib/patterns');
 const { eventText } = require('../lib/report');
 
@@ -219,4 +219,24 @@ test('stable: time since the last unexpected restart or crash, never before watc
   assert.match(dailySummary({ ...base, stableFor: 5 * DAY }, t, String), /daily_stable\(time=days\(n=5\)\)$/);
   assert.match(dailySummary({ ...base, stableFor: 20 * 3600e3 }, t, String), /daily_ok\(\)$/);
   assert.match(dailySummary({ ...base, stableFor: 5 * DAY, unplanned24h: 1 }, t, String), /daily_attention/);
+});
+
+// ── Hourly check on the clock ─────────────────────────────────────────────────
+
+test('next hour: app started 11:37 (2026-10-18) checks at 09:00:05, not 08:37 (summary 2026-10-19)', () => {
+  const t = at('08:37:40.500');
+  assert.equal(t + untilNextHour(t, local(t).m), at('09:00:05'));
+});
+
+test('next hour: a timer a moment early or late still lands a few seconds past the following hour', () => {
+  for (const s of ['08:00:04.999', '08:00:05', '08:00:05.020', '08:59:59.999']) {
+    const t = at(s);
+    assert.equal(t + untilNextHour(t, local(t).m), at('09:00:05'), s);
+  }
+});
+
+test('next hour: half-hour timezone (local minute differs from UTC) still runs on the local hour', () => {
+  const t = at('02:40:00');          // 08:10 in UTC+5:30
+  const next = t + untilNextHour(t, 10);
+  assert.equal(next, at('03:30:05')); // 09:00:05 local
 });

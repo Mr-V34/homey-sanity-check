@@ -11,12 +11,12 @@ const { WINDOW, resolutionFor, trimToWindow, analyze } = require('./lib/postmort
 const { BASE, analyzeSignals } = require('./lib/verdict');
 const {
   crashMinutes, scheduledNear, addHistory, changeEntries, dropPlannedBoots, recurringTimes, crashesBeforeBoots,
-  changeLink, stableFor,
+  changeLink, stableFor, untilNextHour,
 } = require('./lib/patterns');
 const { eventText, dailySummary } = require('./lib/report');
 const { zigbeeCounts, chattyDevices, zwaveCounts, failingZwave, zwaveNames } = require('./lib/radio');
 const {
-  DEFAULT_SUMMARY_HOUR, SUMMARY_DETAILS, CHECK_INTERVAL, FIRST_CHECK_DELAY,
+  DEFAULT_SUMMARY_HOUR, SUMMARY_DETAILS, FIRST_CHECK_DELAY,
 } = require('./lib/constants');
 
 // Settings and state of the silent-device check, removed in 0.5.0.
@@ -56,17 +56,22 @@ class SanityCheckApp extends Homey.App {
       return unplannedWithin(boots, hours * 60 * 60 * 1000, Date.now());
     });
 
-    this._firstTimeout = this.homey.setTimeout(() => this.runCheck(), FIRST_CHECK_DELAY);
-    this._interval     = this.homey.setInterval(() => this.runCheck(), CHECK_INTERVAL);
+    this._timer = this.homey.setTimeout(() => this._tick(), FIRST_CHECK_DELAY);
   }
 
   async onUninit() {
-    this.homey.clearTimeout(this._firstTimeout);
-    this.homey.clearInterval(this._interval);
+    this.homey.clearTimeout(this._timer);
     this.log('Sanity Check stopped');
   }
 
   // ── Check ───────────────────────────────────────────────────────────────────
+
+  // First check FIRST_CHECK_DELAY after start, then one at each full local hour.
+  _tick() {
+    const now = Date.now();
+    this._timer = this.homey.setTimeout(() => this._tick(), untilNextHour(now, this._local(now).m));
+    this.runCheck();
+  }
 
   async runCheck({ force = false } = {}) {
     if (this._running) return false;

@@ -236,6 +236,27 @@ test('report: crash text adds memory and the "stopped by Homey" hint', () => {
   assert.match(text, /report\.killed_hint/);
 });
 
+test('report: crash text shows RSS next to PSS when known (RSS is what gets an app killed)', () => {
+  const t = (k, tk = {}) => `${k}${JSON.stringify(tk)}`;
+  const text = eventText({ type: 'app_crashed', name: 'X', version: '1', delta: 1, last24h: 1, pss: 50e6, rss: 140e6 }, t, () => '');
+  assert.match(text, /report\.memory_before_rss\{"pss":"50 MB","rss":"140 MB"\}/);
+  const restart = eventText({
+    type: 'homey_restarted', bootDate: 'x', rebootReason: 'unexpected', prevUptimeMs: HOUR,
+    suspects: [{ name: 'A', version: '1', crashes: 2, pss: 50e6, rss: 140e6 }, { name: 'B', version: '1', crashes: 1, pss: 30e6 }],
+  }, t, () => '');
+  assert.match(restart, /report\.crash_mem_rss\{\\"pss\\":\\"50 MB\\",\\"rss\\":\\"140 MB\\"\}/);
+  assert.match(restart, /report\.crash_mem\{\\"pss\\":\\"30 MB\\"\}/); // old state without RSS: as before
+});
+
+test('apps: crash keeps PSS and RSS from the check before, suspects take the highest', () => {
+  const s1 = checkApps([app({ usage: { mem: 140e6 } })], {}, T0, null, { 'com.x': 50e6 }).state;
+  const r = checkApps([app({ crashedCount: 1, usage: { mem: 60e6 } })], s1, T0 + HOUR, null, { 'com.x': 20e6 });
+  assert.equal(r.events[0].pss, 50e6);
+  assert.equal(r.events[0].rss, 140e6);
+  const s = suspects(r.state.apps, T0 + 2 * HOUR);
+  assert.equal(s[0].rss, 140e6);
+});
+
 test('apps: autoupdate is kept as true/false, anything else as unknown', () => {
   const apps = [
     { id: 'on', name: 'On', version: '1', autoupdate: true },

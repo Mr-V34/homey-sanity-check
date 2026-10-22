@@ -19,7 +19,7 @@ Everything is an **indication, not proof**. If an app crashed 100 times before a
 | Report | When |
 |---|---|
 | **Homey restarted** | Homey has a new boot id. Shows the time, the reason in plain words (a requested restart or a firmware update is planned; *unexpected* means a crash or power loss), the previous uptime, when we last checked before the restart, and the apps that crashed most in the 24 h before. After an **unplanned** restart it starts with a verdict and adds the restart analysis below. |
-| **App crashed** | An app's crash counter went up since the previous check. Shows the number of crashes, the 24-hour total, the app's memory (PSS) at the check before and, when Homey's Insights has it, the **crash time** to within a few seconds. An app that crashes the moment it starts is too short-lived for Insights; its crash gets the check time instead. *No error message* means Homey most likely stopped the app, for example for using too much memory. |
+| **App crashed** | An app's crash counter went up since the previous check. Shows the number of crashes, the 24-hour total, the app's memory (PSS and RSS) at the check before and, when Homey's Insights has it, the **crash time** to within a few seconds. An app that crashes the moment it starts is too short-lived for Insights; its crash gets the check time instead. *No error message* means Homey most likely stopped the app, for example for using too much memory. |
 | **App not running / disabled** | An app went from running to stopped or crashed, or was disabled. |
 | **App updated** | An app got a new version. Its crash statistics start over: a new version counts as a new app. |
 | **Update available** | A newer app version or Homey firmware is available. |
@@ -79,7 +79,7 @@ Sanity Check keeps a small history (30 days, at most 60 events) for these compar
 
 Homey shows two numbers per app on its performance page:
 - **RSS** includes memory shared with other apps. When it gets too high, Homey may stop the app.
-- **PSS** is the app's own share. **30 MB** per app is an often quoted target; Sanity Check uses it as its limit, but it is not in Athom's current documentation.
+- **PSS** is the app's own share. **30 MB** per app is Athom's guideline (Homey Developer Tools); Sanity Check uses it as its limit.
 
 Sanity Check records PSS every hour. An app that crashes without an error message while its PSS keeps growing is the classic sign of a memory leak.
 
@@ -102,7 +102,7 @@ Allt är en **fingervisning, inte ett bevis**. Om en app kraschade 100 gånger f
 | Rapport | När |
 |---|---|
 | **Homey startade om** | Homey har ett nytt boot-id. Visar tid, orsak i klartext (en begärd omstart eller en firmwareuppdatering är planerad; *oväntad* betyder krasch eller strömavbrott), föregående uptime, när vi senast kontrollerade före omstarten och de appar som kraschade mest under 24 h innan. Efter en **oplanerad** omstart börjar den med ett utlåtande och omstartsanalysen nedan läggs till. |
-| **En app kraschade** | En apps kraschräknare har ökat sedan förra kontrollen. Visar antal krascher, summan för 24 h, appens minne (PSS) vid kontrollen innan och, när Homeys Insights har datan, **kraschtiden** på några sekunder när. En app som kraschar direkt när den startar lever för kort för Insights, och då får kraschen kontrolltiden i stället. *Utan felmeddelande* betyder att Homey troligen stoppade appen, till exempel för högt minne. |
+| **En app kraschade** | En apps kraschräknare har ökat sedan förra kontrollen. Visar antal krascher, summan för 24 h, appens minne (PSS och RSS) vid kontrollen innan och, när Homeys Insights har datan, **kraschtiden** på några sekunder när. En app som kraschar direkt när den startar lever för kort för Insights, och då får kraschen kontrolltiden i stället. *Utan felmeddelande* betyder att Homey troligen stoppade appen, till exempel för högt minne. |
 | **App körs inte / avstängd** | En app gick från körs till stoppad eller kraschad, eller stängdes av. |
 | **App uppdaterad** | En app fick en ny version. Kraschstatistiken börjar om: en ny version räknas som en ny app. |
 | **Uppdatering finns** | En nyare appversion eller Homey-firmware finns. |
@@ -162,7 +162,7 @@ Sanity Check sparar en liten historik (30 dagar, högst 60 händelser) för jäm
 
 Homey visar två siffror per app på sin prestandasida:
 - **RSS** räknar med minne som delas med andra appar. Blir den för hög kan Homey stoppa appen.
-- **PSS** är appens egen andel. **30 MB** per app är ett ofta citerat mål; Sanity Check använder det som gräns, men det finns inte i Athoms nuvarande dokumentation.
+- **PSS** är appens egen andel. **30 MB** per app är Athoms riktlinje (Homey Developer Tools); Sanity Check använder det som gräns.
 
 Sanity Check sparar PSS varje timme. En app som kraschar utan felmeddelande medan dess PSS växer är det klassiska tecknet på en minnesläcka.
 
